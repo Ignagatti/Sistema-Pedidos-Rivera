@@ -345,19 +345,31 @@
             const pizzaQtyRef = useRef(null);
             const flavor1Ref = useRef(null);
             const flavor2Ref = useRef(null);
+            const flavor3Ref = useRef(null);
             const drinkSelectRef = useRef(null);
             const drinkQtyRef = useRef(null);
 
             const [pizzaTypeUI, setPizzaTypeUI] = useState('entera');
             const pizzaFlavors = Object.keys(prices.flavors || {});
 
-            const getPizzaPrice = (type, f1, f2) => {
-                const p1 = prices.flavors[f1] || { entera: 0, media: 0 };
-                if (type === 'mitad') return parseInt(p1.media) || 0;
-                if (type === 'entera') {
-                    if (!f2) return parseInt(p1.entera) || 0;
-                    const p2 = prices.flavors[f2] || { entera: 0, media: 0 };
-                    return ((parseInt(p1.entera) || 0) / 2) + ((parseInt(p2.entera) || 0) / 2);
+            const getPizzaPrice = (type, uniqueFlavors) => {
+                if (uniqueFlavors.length === 0) return 0;
+                if (uniqueFlavors.length === 1) {
+                    const p = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
+                    return type === 'mitad' ? parseInt(p.media) || 0 : parseInt(p.entera) || 0;
+                }
+                if (uniqueFlavors.length === 2) {
+                    const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
+                    const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
+                    const sumMedias = (parseInt(p1.media) || 0) + (parseInt(p2.media) || 0);
+                    return type === 'mitad' ? sumMedias / 2 : sumMedias;
+                }
+                if (uniqueFlavors.length === 3) {
+                    const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
+                    const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
+                    const p3 = prices.flavors[uniqueFlavors[2]] || { entera: 0, media: 0 };
+                    const avgMedia = ((parseInt(p1.media) || 0) + (parseInt(p2.media) || 0) + (parseInt(p3.media) || 0)) / 3;
+                    return type === 'mitad' ? Math.round(avgMedia) : Math.round(avgMedia * 2);
                 }
                 return 0;
             };
@@ -365,23 +377,27 @@
             const addPizza = () => {
                 const f1 = flavor1Ref.current.value;
                 const f2 = flavor2Ref.current?.value;
+                const f3 = flavor3Ref.current?.value;
                 const qty = parseInt(pizzaQtyRef.current.value) || 1;
                 const obs = obsRef.current.value;
                 const type = pizzaTypeUI;
 
-                if (!f1) return showAlert("Falta gusto");
+                if (!f1) return showAlert("Falta gusto principal");
 
-                let desc = f1;
-                if (type === 'mitad') desc = `Media ${f1}`;
-                else if (f2) desc = `${f1} y ${f2}`;
+                const flavors = [f1, f2, f3].filter(Boolean);
+                const uniqueFlavors = [...new Set(flavors)];
 
-                const unitPrice = getPizzaPrice(type, f1, f2);
+                let desc = uniqueFlavors.join(' y ');
+                if (type === 'mitad') desc = `Media ${desc}`;
+
+                const unitPrice = getPizzaPrice(type, uniqueFlavors);
                 const boxPrice = withBox ? (parseInt(prices.box) || 0) * qty : 0;
                 const totalUnitPrice = unitPrice + (withBox ? (parseInt(prices.box) || 0) : 0);
                 setCurrentPizzas([...currentPizzas, { id: Date.now(), description: desc, qty, type, price: totalUnitPrice, obs, withBox }]);
 
                 flavor1Ref.current.value = "";
                 if (flavor2Ref.current) flavor2Ref.current.value = "";
+                if (flavor3Ref.current) flavor3Ref.current.value = "";
                 obsRef.current.value = "";
                 pizzaQtyRef.current.value = 1;
             };
@@ -612,9 +628,10 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <select ref={flavor1Ref} className="w-full p-2 border rounded bg-white"><option value="">-- Gusto 1 --</option>{pizzaFlavors.map(f => <option key={f} value={f}>{f}</option>)}</select>
-                                            {pizzaTypeUI === 'entera' ? (<select ref={flavor2Ref} className="w-full p-2 border rounded bg-white"><option value="">-- Gusto 2 --</option>{pizzaFlavors.map(f => <option key={f} value={f}>{f}</option>)}</select>) : <div className="bg-gray-200/50 rounded border border-gray-300 opacity-50"></div>}
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <select ref={flavor1Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 1 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
+                                            <select ref={flavor2Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 2 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
+                                            <select ref={flavor3Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 3 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
                                         </div>
                                         <div className="flex gap-2 items-center pt-1"><input ref={obsRef} type="text" placeholder="Observación..." className="flex-1 p-2 border rounded text-sm bg-white" /><div className="flex items-center gap-1"><input ref={pizzaQtyRef} type="number" min="1" defaultValue="1" className="w-14 p-2 border rounded text-center font-bold" /><button onClick={addPizza} className="bg-orange-600 text-white px-4 py-2 rounded font-bold text-sm uppercase shadow">+ AGREGAR</button></div></div>
                                     </div>
