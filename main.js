@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
+const os = require('os');
 
 // Rutas de archivos
 const DATA_PATH = app.getPath('userData');
@@ -179,14 +180,44 @@ app.whenReady().then(async () => {
 
     // Imprimir Ticket
     ipcMain.handle('print-ticket', async (event, htmlContent) => {
-        return new Promise((resolve) => {
-            const printWin = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
-            printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+        return new Promise(async (resolve) => {
+            // Escribir HTML en archivo temporal para que las rutas relativas (FOTO.PNG) funcionen
+            const tmpFile = path.join(__dirname, '_ticket_tmp.html');
+            try {
+                await fs.writeFile(tmpFile, htmlContent, 'utf-8');
+            } catch (e) {
+                console.error('Error escribiendo ticket temporal:', e);
+                resolve(false);
+                return;
+            }
+
+            const printWin = new BrowserWindow({
+                show: false,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    webSecurity: false  // permite cargar FOTO.PNG local
+                }
+            });
+
+            printWin.loadFile(tmpFile);
+
             printWin.webContents.on('did-finish-load', () => {
-                printWin.webContents.print({ silent: false, printBackground: true }, (success) => {
-                    printWin.close();
-                    resolve(success);
-                });
+                // Pequeña pausa para asegurar que las imágenes cargaron
+                setTimeout(() => {
+                    printWin.webContents.print({ silent: false, printBackground: true }, (success) => {
+                        printWin.close();
+                        // Borrar archivo temporal
+                        fs.unlink(tmpFile).catch(() => {});
+                        resolve(success);
+                    });
+                }, 300);
+            });
+
+            printWin.webContents.on('did-fail-load', () => {
+                printWin.close();
+                fs.unlink(tmpFile).catch(() => {});
+                resolve(false);
             });
         });
     });
