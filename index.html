@@ -45,8 +45,9 @@
 
     <script>
         window.onerror = function (msg, url, line) {
-            document.getElementById('error-overlay').style.display = 'block';
-            document.getElementById('error-overlay').innerHTML = "⛔ ERROR:\n" + msg + "\nEn: " + url + ":" + line;
+            const ov = document.getElementById('error-overlay');
+            ov.style.display = 'block';
+            ov.textContent = "⛔ ERROR:\n" + msg + "\nEn: " + url + ":" + line;
             return false;
         };
     </script>
@@ -85,6 +86,7 @@
         const INITIAL_PRICES = {
             box: 0,
             empanada: 0,
+            pizzaLibreH: 0,
             flavors: DEFAULT_FLAVORS.reduce((acc, f) => { acc[f] = { entera: 0, media: 0 }; return acc; }, {}),
             drinks: {},
             ticket: { printPrice: false, simpleTicket: false, fontSize: "14px", headerName: "Rivera Club", address: "Esperanza, Santa Fe", message: "¡Gracias por su visita!" }
@@ -230,12 +232,13 @@
                 <head>
                     <meta charset="utf-8">
                     <style>
-                        body { 
-                            width: 58mm; 
-                            margin: 0 auto; 
+                        body {
+                            width: 58mm;
+                            margin: 0 auto;
                             padding: 5px 2px;
                             background: #fff;
                             color: #000;
+                            font-size: ${ticketConfig.fontSize || '14px'};
                         }
                         @media print { 
                             body { width: 58mm; margin: 0; padding: 0; }
@@ -349,10 +352,10 @@
                 return () => unsubscribe();
             }, []);
 
-            const saveOrders = (d) => { setOrders(d); storage.set('orders', d); };
-            const saveLibres = (d) => { setActiveLibres(d); storage.set('libres', d); };
-            const savePrices = (d) => { setPrices(d); storage.set('prices', d); };
-            const saveHistory = (d) => { setHistory(d); storage.set('history', d); };
+            const saveOrders = useCallback((d) => { setOrders(d); storage.set('orders', d); }, []);
+            const saveLibres = useCallback((d) => { setActiveLibres(d); storage.set('libres', d); }, []);
+            const savePrices = useCallback((d) => { setPrices(d); storage.set('prices', d); }, []);
+            const saveHistory = useCallback((d) => { setHistory(d); storage.set('history', d); }, []);
 
             const showConfirm = useCallback((message, onConfirm) => {
                 setDialog({ type: 'confirm', message, onConfirm });
@@ -473,8 +476,10 @@
                     const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
                     const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
                     const p3 = prices.flavors[uniqueFlavors[2]] || { entera: 0, media: 0 };
-                    const avgMedia = ((parseInt(p1.media) || 0) + (parseInt(p2.media) || 0) + (parseInt(p3.media) || 0)) / 3;
-                    return type === 'mitad' ? Math.round(avgMedia) : Math.round(avgMedia * 2);
+                    // Cada gusto ocupa 1/3 → vale la mitad de su precio "media" (que es 1/2)
+                    // Entera = (m1 + m2 + m3) / 2 | Mitad = (m1 + m2 + m3) / 4
+                    const sumMedias3 = (parseInt(p1.media) || 0) + (parseInt(p2.media) || 0) + (parseInt(p3.media) || 0);
+                    return type === 'mitad' ? Math.round(sumMedias3 / 4) : Math.round(sumMedias3 / 2);
                 }
                 return 0;
             };
@@ -505,6 +510,8 @@
                 if (flavor3Ref.current) flavor3Ref.current.value = "";
                 obsRef.current.value = "";
                 pizzaQtyRef.current.value = 1;
+                setPizzaTypeUI('entera');
+                setWithBox(false);
             };
 
             const addDrink = () => {
@@ -518,7 +525,7 @@
             };
 
             const submitOrder = () => {
-                const client = clientNameRef.current.value;
+                const client = clientNameRef.current.value.trim();
                 if (!client) return showAlert("Falta nombre");
 
                 const newId = Date.now();
@@ -529,7 +536,7 @@
 
                     const newLibre = { id: newId, client, people, round: 1, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), obs };
                     setActiveLibres([...activeLibres, newLibre]);
-                    setOrders([...orders, { ...newLibre, type: 'libre', pizzas: [], drinks: [], empanadas: 0, totalPrice: 0, id: newId + '_1' }]);
+                    setOrders([...orders, { ...newLibre, type: 'libre', pizzas: [], drinks: [], empanadas: 0, totalPrice: 0, id: newId + '_1', libreId: newId }]);
 
                     peopleQtyRef.current.value = "";
                     libreObsRef.current.value = "";
@@ -553,14 +560,15 @@
                 const nr = l.round + 1;
                 const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr } : x);
                 setActiveLibres(updated);
-                setOrders([...orders, { id: Date.now(), client: l.client, pizzas: [], drinks: [], empanadas: 0, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), type: 'libre', people: l.people, round: nr, totalPrice: 0, obs: l.obs }]);
+                setOrders([...orders, { id: Date.now(), client: l.client, pizzas: [], drinks: [], empanadas: 0, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), type: 'libre', people: l.people, round: nr, totalPrice: 0, obs: l.obs, libreId: l.id }]);
             }, [activeLibres, orders, setActiveLibres, setOrders]);
 
             const handleCloseLibre = useCallback((l) => {
                 showConfirm("¿Cerrar Mesa?", () => {
                     setActiveLibres(activeLibres.filter(x => x.id !== l.id));
+                    setOrders(orders.filter(x => x.libreId !== l.id));
                 });
-            }, [activeLibres, setActiveLibres, showConfirm]);
+            }, [activeLibres, orders, setActiveLibres, setOrders, showConfirm]);
 
             const handleDeleteOrder = useCallback((o) => {
                 showConfirm('¿Eliminar sin sumar al total?', () => {
@@ -607,6 +615,11 @@
                                         <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
                                             <label className="font-bold text-yellow-800 block mb-1">Precio Empanada Unitaria</label>
                                             <input type="number" key={`emp-${showPriceConfig}`} defaultValue={localPrices.empanada} onChange={e => setLocalPrices({ ...localPrices, empanada: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-yellow-300 rounded font-bold text-lg" />
+                                        </div>
+                                        {/* MESA LIBRE */}
+                                        <div className="bg-purple-50 p-3 rounded border border-purple-200">
+                                            <label className="font-bold text-purple-800 block mb-1 flex items-center gap-2"><Users size={16} /> Precio Mesa Libre (por persona)</label>
+                                            <input type="number" key={`libre-${showPriceConfig}`} defaultValue={localPrices.pizzaLibreH || 0} onChange={e => setLocalPrices({ ...localPrices, pizzaLibreH: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-purple-300 rounded font-bold text-lg" />
                                         </div>
                                         {/* PIZZAS */}
                                         <div>

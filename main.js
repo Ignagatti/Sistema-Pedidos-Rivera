@@ -98,12 +98,13 @@ async function writeFullBackup() {
 }
 
 function createWindow() {
+    const iconPath = path.join(__dirname, 'icono.ico');
     const win = new BrowserWindow({
         width: 1280,
         height: 900,
         title: "Sistema Club de Bochas",
         autoHideMenuBar: true,
-        icon: path.join(__dirname, 'icono.ico'),
+        ...(fsSync.existsSync(iconPath) && { icon: iconPath }),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -182,7 +183,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('print-ticket', async (event, htmlContent) => {
         return new Promise(async (resolve) => {
             // Escribir HTML en archivo temporal para que las rutas relativas (FOTO.PNG) funcionen
-            const tmpFile = path.join(__dirname, '_ticket_tmp.html');
+            const tmpFile = path.join(app.getPath('temp'), '_ticket_tmp.html');
             try {
                 await fs.writeFile(tmpFile, htmlContent, 'utf-8');
             } catch (e) {
@@ -226,8 +227,13 @@ app.whenReady().then(async () => {
 });
 
 // Backup completo al cerrar la app normalmente
-app.on('before-quit', async () => {
-    await writeFullBackup();
+// before-quit no espera async callbacks, así que bloqueamos el quit manualmente
+let quitting = false;
+app.on('before-quit', (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    quitting = true;
+    writeFullBackup().finally(() => app.exit(0));
 });
 
 app.on('window-all-closed', () => {
