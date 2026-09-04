@@ -6,7 +6,6 @@ contextBridge.exposeInMainWorld("__BOCHAS_STORAGE__", {
     loadInitial: () => ipcRenderer.invoke("storage:loadInitial"),
     set: (key, value) => ipcRenderer.invoke("storage:set", { key, value }),
     clearAll: () => ipcRenderer.invoke("storage:clearAll"),
-    printTicket: (htmlContent) => ipcRenderer.invoke("print-ticket", htmlContent),
     openNewWindow: () => ipcRenderer.invoke("window:new"),
     onUpdate: (callback) => {
         const subscription = (_event, payload) => callback(payload);

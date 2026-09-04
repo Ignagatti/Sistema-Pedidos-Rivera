@@ -75,7 +75,6 @@
         const ZoomOut = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
         const AlertCircle = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>} />;
         const Check = (p) => <Icon {...p} d={<><polyline points="20 6 9 17 4 12" /></>} />;
-        const Printer = (p) => <Icon {...p} d={<><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></>} />;
         const DollarSign = (p) => <Icon {...p} d={<><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>} />;
         const AlertTriangle = (p) => <Icon {...p} d={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></>} />;
         const HelpCircle = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" x2="12.01" y1="17" y2="17" /></>} />;
@@ -88,175 +87,13 @@
             empanada: 0,
             pizzaLibreH: 0,
             flavors: DEFAULT_FLAVORS.reduce((acc, f) => { acc[f] = { entera: 0, media: 0 }; return acc; }, {}),
-            drinks: {},
-            ticket: { printPrice: false, simpleTicket: false, fontSize: "14px", headerName: "Rivera Club", address: "Esperanza, Santa Fe", message: "¡Gracias por su visita!" }
+            drinks: {}
         };
 
         const storage = window.__BOCHAS_STORAGE__ || {
             loadInitial: async () => ({ orders: [], libres: [], prices: INITIAL_PRICES, history: [] }),
             set: async () => { },
-            onUpdate: () => () => { },
-            printTicket: async () => { }
-        };
-
-        // --- FUNCIONES DE TICKET (REDISEÑO TOTAL "DESDE 0") ---
-        const generatePremiumTicketHTML = (order, ticketConfig, prices) => {
-            const escapeHtml = (text) => {
-                if (!text) return '';
-                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-                return String(text).replace(/[&<>"']/g, m => map[m]);
-            };
-
-            const formatCurrency = (amount) => `$ ${Number(amount || 0).toFixed(0)}`; // Sin decimales para más claridad
-
-            const showPrices = ticketConfig.printPrice === true;
-
-            let html = '';
-            
-            // Si NO hay precios, el ticket es GIGANTE y CENTRADO
-            if (!showPrices) {
-                html += `<div style="text-align: center; font-family: 'Courier New', monospace; font-weight: 900;">`;
-                
-                // Cliente
-                html += `<div style="font-size: 32px; border-bottom: 3px solid #000; margin-bottom: 15px; padding-bottom: 5px;">${escapeHtml(order.client?.toUpperCase())}</div>`;
-                
-                if (order.tableNumber) {
-                    html += `<div style="font-size: 24px; margin-bottom: 15px;">MESA ${order.tableNumber}</div>`;
-                }
-
-                // Lista de productos
-                html += `<div style="text-align: left; font-size: 22px; line-height: 1.2;">`;
-                
-                if (order.type === 'libre') {
-                    html += `<div style="margin-bottom: 10px;">• ${order.people} x MESA LIBRE</div>`;
-                    if (order.round) html += `<div style="font-size: 18px; margin-left: 20px;">(RONDA ${order.round})</div>`;
-                }
-
-                if (order.pizzas && order.pizzas.length > 0) {
-                    order.pizzas.forEach(p => {
-                        html += `<div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc;">${p.qty}x ${escapeHtml(p.description.toUpperCase())}</div>`;
-                        if (p.obs) html += `<div style="font-size: 16px; font-style: italic; margin-left: 15px; margin-bottom: 8px;">* ${escapeHtml(p.obs.toUpperCase())}</div>`;
-                    });
-                }
-
-                if (order.drinks && order.drinks.length > 0) {
-                    order.drinks.forEach(d => {
-                        html += `<div style="margin-bottom: 5px;">${d.qty}x ${escapeHtml(d.name.toUpperCase())}</div>`;
-                    });
-                }
-
-                if (order.empanadas > 0) {
-                    html += `<div style="margin-bottom: 5px;">${order.empanadas}x EMPANADAS</div>`;
-                }
-                
-                html += `</div>`; // Fin lista
-                
-                if (order.obs && order.type !== 'libre') {
-                    html += `<div style="margin-top: 15px; border: 2px solid #000; padding: 5px; font-size: 20px;">NOTAS: ${escapeHtml(order.obs.toUpperCase())}</div>`;
-                }
-
-                html += `<div style="font-size: 12px; margin-top: 20px; border-top: 1px solid #000; padding-top: 5px;">${new Date().toLocaleTimeString()}</div>`;
-                html += `</div>`;
-            } 
-            // Si HAY precios, diseño estructurado pero también claro
-            else {
-                html += `<div style="font-family: 'Courier New', monospace; font-weight: 900;">`;
-                
-                // Header (Logo opcional aquí)
-                html += `<div style="text-align: center; margin-bottom: 10px;">`;
-                html += `<img src="./FOTO.PNG" style="max-width: 30mm; margin-bottom: 5px;" onerror="this.style.display='none'" />`;
-                html += `<div style="font-size: 16px;">${escapeHtml(ticketConfig.headerName || 'RIVERA CLUB')}</div>`;
-                html += `</div>`;
-
-                // Cliente
-                html += `<div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0; text-align: center; margin-bottom: 10px;">`;
-                html += `<div style="font-size: 24px;">${escapeHtml(order.client?.toUpperCase())}</div>`;
-                if (order.tableNumber) html += `<div style="font-size: 16px;">MESA ${order.tableNumber}</div>`;
-                html += `</div>`;
-
-                // Items con precio
-                html += `<div style="font-size: 15px;">`;
-                const renderLine = (qty, label, price) => `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="flex: 1;">${qty}x ${escapeHtml(label.toUpperCase())}</span>
-                        <span style="width: 70px; text-align: right;">$${price}</span>
-                    </div>
-                `;
-
-                if (order.type === 'libre') {
-                    const pricePerPerson = parseInt(prices.pizzaLibreH) || 0;
-                    const totalLibre = order.totalPrice || (parseInt(order.people) * pricePerPerson);
-                    html += renderLine(order.people, 'MESA LIBRE', totalLibre);
-                }
-
-                if (order.pizzas) {
-                    order.pizzas.forEach(p => {
-                        html += renderLine(p.qty, p.description, (p.price || 0) * p.qty);
-                        if (p.obs) html += `<div style="font-size: 12px; font-style: italic; margin-left: 10px; margin-bottom: 5px;">> ${escapeHtml(p.obs.toUpperCase())}</div>`;
-                    });
-                }
-
-                if (order.drinks) {
-                    order.drinks.forEach(d => {
-                        html += renderLine(d.qty, d.name, (d.price || 0) * d.qty);
-                    });
-                }
-
-                if (order.empanadas > 0) {
-                    html += renderLine(order.empanadas, 'EMPANADAS', order.empanadas * (prices.empanada || 0));
-                }
-                html += `</div>`;
-
-                // Total
-                const totalFinal = order.type === 'libre' && !order.totalPrice 
-                    ? (parseInt(order.people) * (parseInt(prices.pizzaLibreH) || 0)) 
-                    : (order.totalPrice || 0);
-
-                html += `<div style="border-top: 1px dashed #000; margin: 10px 0;"></div>`;
-                html += `
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; font-weight: 900;">
-                        <span style="font-size: 18px;">TOTAL</span>
-                        <span style="font-size: 28px;">$${totalFinal}</span>
-                    </div>
-                `;
-
-                if (ticketConfig.message) {
-                    html += `<div style="text-align: center; font-size: 11px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 5px;">${escapeHtml(ticketConfig.message.toUpperCase())}</div>`;
-                }
-                html += `</div>`;
-            }
-
-            return `
-                <!doctype html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <style>
-                        body {
-                            width: 58mm;
-                            margin: 0 auto;
-                            padding: 5px 2px;
-                            background: #fff;
-                            color: #000;
-                            font-size: ${ticketConfig.fontSize || '14px'};
-                        }
-                        @media print { 
-                            body { width: 58mm; margin: 0; padding: 0; }
-                            @page { margin: 0; }
-                        }
-                    </style>
-                </head>
-                <body onload="window.focus();">
-                    ${html}
-                </body>
-                </html>
-            `;
-        };
-
-        const handlePrintTicket = async (order, ticketConfig = INITIAL_PRICES.ticket, prices = INITIAL_PRICES) => {
-            if (!storage.printTicket) return;
-            const html = generatePremiumTicketHTML(order, ticketConfig, prices);
-            storage.printTicket(html);
+            onUpdate: () => () => { }
         };
 
         // --- COMPONENTES MEMORIZADOS (Para evitar lag) ---
@@ -281,25 +118,27 @@
 
         const KitchenOrdersList = React.memo(({ orders, onComplete, onDelete, prices }) => {
             return (
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 content-start">
                     {orders.map((o) => (
-                        <div key={o.id} className={`bg-white rounded-lg shadow border-l-4 ${o.type === 'libre' ? 'border-purple-500' : 'border-blue-500'}`}>
-                            <div className="flex items-start justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-t-lg">
-                                <div><div className="font-bold text-lg text-gray-800">{o.client}</div><div className="text-xs text-gray-500">{o.timestamp}</div></div>
-                                <div className="flex flex-col items-end gap-2">
+                        <div key={o.id} className={`bg-white rounded-lg shadow border-l-4 ${o.type === 'libre' ? 'border-purple-500' : 'border-blue-500'} flex flex-col justify-between`}>
+                            <div className="p-2 border-b border-gray-100 bg-gray-50/70 rounded-t-lg flex items-start justify-between">
+                                <div className="overflow-hidden mr-1">
+                                    <div className="font-black text-base text-gray-800 truncate leading-snug">{o.client}</div>
+                                    <div className="text-[10px] text-gray-500 font-mono">{o.timestamp}</div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1 shrink-0">
                                     <div className="flex gap-1">
-                                        <button onClick={() => handlePrintTicket(o, prices?.ticket, prices)} className="bg-blue-100 text-blue-600 p-1 rounded hover:bg-blue-200" title="Imprimir Ticket"><Printer size={16} /></button>
-                                        <button onClick={() => onComplete(o)} className="bg-green-100 text-green-600 p-1 rounded hover:bg-green-200" title="Completar y Sumar"><Check size={16} /></button>
-                                        <button onClick={() => onDelete(o)} className="bg-red-100 text-red-600 p-1 rounded hover:bg-red-200" title="Eliminar"><Trash2 size={16} /></button>
+                                        <button onClick={() => onComplete(o)} className="bg-green-100 text-green-600 p-1.5 rounded hover:bg-green-200 flex items-center gap-1 font-bold text-xs" title="Completar y Sumar"><Check size={14} /> Listo</button>
+                                        <button onClick={() => onDelete(o)} className="bg-red-100 text-red-600 p-1.5 rounded hover:bg-red-200" title="Eliminar"><Trash2 size={14} /></button>
                                     </div>
-                                    {o.type === 'libre' ? <span className="text-purple-600 font-black text-xs">{o.round}ª RONDA</span> : <span className="text-lg font-bold text-green-700">${(o.totalPrice || 0).toLocaleString()}</span>}
+                                    {o.type === 'libre' ? <span className="text-purple-600 font-black text-xs">{o.round}ª RONDA</span> : <span className="text-sm font-bold text-green-700">${(o.totalPrice || 0).toLocaleString()}</span>}
                                 </div>
                             </div>
-                            <div className="p-3 pt-2 text-sm text-gray-700 space-y-1">
-                                {o.type === 'libre' && o.obs && <div className="text-orange-600 font-bold mb-2">⚠️ {o.obs}</div>}
-                                {o.pizzas.map((p, i) => (<div key={i}>• {p.qty}x {p.description} {p.obs && <span className="text-orange-600 italic">({p.obs})</span>}</div>))}
-                                {o.drinks && o.drinks.map((d, i) => (<div key={`d${i}`} className="text-blue-700 font-bold">• {d.qty}x {d.name}</div>))}
-                                {o.empanadas > 0 && <div className="font-bold text-yellow-700 mt-1">🥟 {o.empanadas} Empanadas</div>}
+                            <div className="p-2 text-xs text-gray-700 space-y-0.5">
+                                {o.type === 'libre' && o.obs && <div className="text-orange-600 font-bold mb-1">⚠️ {o.obs}</div>}
+                                {o.pizzas.map((p, i) => (<div key={i} className="leading-tight">• <strong className="text-gray-900">{p.qty}x</strong> {p.description} {p.obs && <span className="text-orange-600 italic">({p.obs})</span>}</div>))}
+                                {o.drinks && o.drinks.map((d, i) => (<div key={`d${i}`} className="text-blue-700 font-bold leading-tight">• <strong>{d.qty}x</strong> {d.name}</div>))}
+                                {o.empanadas > 0 && <div className="font-bold text-yellow-700 mt-0.5">🥟 {o.empanadas} Empanadas</div>}
                             </div>
                         </div>
                     ))}
@@ -444,6 +283,8 @@
             const [currentPizzas, setCurrentPizzas] = useState([]);
             const [currentDrinks, setCurrentDrinks] = useState([]);
             const [withBox, setWithBox] = useState(false);
+            const [empQtyInput, setEmpQtyInput] = useState('');
+            const [peopleQtyInput, setPeopleQtyInput] = useState('');
 
             const clientNameRef = useRef(null);
             const peopleQtyRef = useRef(null);
@@ -451,14 +292,38 @@
             const empanadasRef = useRef(null);
             const obsRef = useRef(null);
             const pizzaQtyRef = useRef(null);
-            const flavor1Ref = useRef(null);
-            const flavor2Ref = useRef(null);
-            const flavor3Ref = useRef(null);
             const drinkSelectRef = useRef(null);
             const drinkQtyRef = useRef(null);
 
+            const [selectedFlavors, setSelectedFlavors] = useState([]);
             const [pizzaTypeUI, setPizzaTypeUI] = useState('entera');
             const pizzaFlavors = Object.keys(prices.flavors || {});
+
+            const calculatedTotal = useMemo(() => {
+                if (isLibre) {
+                    const people = parseInt(peopleQtyInput) || 0;
+                    const librePrice = parseInt(prices.pizzaLibreH) || 0;
+                    return people * librePrice;
+                }
+                const pizzasSum = currentPizzas.reduce((sum, p) => sum + (parseInt(p.price) || 0) * (parseInt(p.qty) || 1), 0);
+                const drinksSum = currentDrinks.reduce((sum, d) => sum + (parseInt(d.price) || 0) * (parseInt(d.qty) || 1), 0);
+                const empQty = parseInt(empQtyInput) || 0;
+                const empSum = empQty * (parseInt(prices.empanada) || 0);
+                return pizzasSum + drinksSum + empSum;
+            }, [isLibre, peopleQtyInput, prices.pizzaLibreH, prices.empanada, currentPizzas, currentDrinks, empQtyInput]);
+
+            const handleFlavorClick = (flavor) => {
+                const idx = selectedFlavors.indexOf(flavor);
+                if (idx !== -1) {
+                    setSelectedFlavors(selectedFlavors.filter(f => f !== flavor));
+                } else {
+                    if (selectedFlavors.length < 3) {
+                        setSelectedFlavors([...selectedFlavors, flavor]);
+                    } else {
+                        showAlert("Máximo 3 gustos por pizza");
+                    }
+                }
+            };
 
             const getPizzaPrice = (type, uniqueFlavors) => {
                 if (uniqueFlavors.length === 0) return 0;
@@ -476,8 +341,6 @@
                     const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
                     const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
                     const p3 = prices.flavors[uniqueFlavors[2]] || { entera: 0, media: 0 };
-                    // Cada gusto ocupa 1/3 → vale la mitad de su precio "media" (que es 1/2)
-                    // Entera = (m1 + m2 + m3) / 2 | Mitad = (m1 + m2 + m3) / 4
                     const sumMedias3 = (parseInt(p1.media) || 0) + (parseInt(p2.media) || 0) + (parseInt(p3.media) || 0);
                     return type === 'mitad' ? Math.round(sumMedias3 / 4) : Math.round(sumMedias3 / 2);
                 }
@@ -485,33 +348,47 @@
             };
 
             const addPizza = () => {
-                const f1 = flavor1Ref.current.value;
-                const f2 = flavor2Ref.current?.value;
-                const f3 = flavor3Ref.current?.value;
-                const qty = parseInt(pizzaQtyRef.current.value) || 1;
-                const obs = obsRef.current.value;
-                const type = pizzaTypeUI;
+                if (selectedFlavors.length === 0) return showAlert("Seleccioná al menos un gusto");
 
-                if (!f1) return showAlert("Falta gusto principal");
+                const qty = parseInt(pizzaQtyRef.current?.value) || 1;
+                const obs = obsRef.current?.value || "";
 
-                const flavors = [f1, f2, f3].filter(Boolean);
-                const uniqueFlavors = [...new Set(flavors)];
+                const type = pizzaTypeUI; // 'entera' | 'mitad'
 
-                let desc = uniqueFlavors.join(' y ');
-                if (type === 'mitad') desc = `Media ${desc}`;
+                let flavorText = "";
+                if (selectedFlavors.length === 1) {
+                    flavorText = selectedFlavors[0];
+                } else if (selectedFlavors.length === 2) {
+                    flavorText = selectedFlavors.join(' y ');
+                } else {
+                    flavorText = `${selectedFlavors.slice(0, -1).join(', ')} y ${selectedFlavors[selectedFlavors.length - 1]}`;
+                }
 
-                const unitPrice = getPizzaPrice(type, uniqueFlavors);
-                const boxPrice = withBox ? (parseInt(prices.box) || 0) * qty : 0;
-                const totalUnitPrice = unitPrice + (withBox ? (parseInt(prices.box) || 0) : 0);
+                let desc = type === 'mitad' ? `Media ${flavorText}` : flavorText;
+
+                const unitPrice = getPizzaPrice(type, selectedFlavors);
+                const boxPrice = withBox ? (parseInt(prices.box) || 0) : 0;
+                const totalUnitPrice = unitPrice + boxPrice;
+
                 setCurrentPizzas([...currentPizzas, { id: Date.now(), description: desc, qty, type, price: totalUnitPrice, obs, withBox }]);
 
-                flavor1Ref.current.value = "";
-                if (flavor2Ref.current) flavor2Ref.current.value = "";
-                if (flavor3Ref.current) flavor3Ref.current.value = "";
-                obsRef.current.value = "";
-                pizzaQtyRef.current.value = 1;
+                setSelectedFlavors([]);
+                if (obsRef.current) obsRef.current.value = "";
+                if (pizzaQtyRef.current) pizzaQtyRef.current.value = 1;
                 setPizzaTypeUI('entera');
                 setWithBox(false);
+            };
+
+            const addDrinkQuick = (drinkName) => {
+                const price = parseInt(prices.drinks[drinkName]) || 0;
+                const existingIndex = currentDrinks.findIndex(d => d.name === drinkName);
+                if (existingIndex !== -1) {
+                    const updated = [...currentDrinks];
+                    updated[existingIndex].qty += 1;
+                    setCurrentDrinks(updated);
+                } else {
+                    setCurrentDrinks([...currentDrinks, { id: Date.now(), name: drinkName, qty: 1, price }]);
+                }
             };
 
             const addDrink = () => {
@@ -519,9 +396,16 @@
                 const qty = parseInt(drinkQtyRef.current?.value) || 1;
                 if (!drinkName) return showAlert("Falta elegir bebida");
                 const price = parseInt(prices.drinks[drinkName]) || 0;
-                setCurrentDrinks([...currentDrinks, { id: Date.now(), name: drinkName, qty, price }]);
-                if(drinkSelectRef.current) drinkSelectRef.current.value = "";
-                if(drinkQtyRef.current) drinkQtyRef.current.value = 1;
+                const existingIndex = currentDrinks.findIndex(d => d.name === drinkName);
+                if (existingIndex !== -1) {
+                    const updated = [...currentDrinks];
+                    updated[existingIndex].qty += qty;
+                    setCurrentDrinks(updated);
+                } else {
+                    setCurrentDrinks([...currentDrinks, { id: Date.now(), name: drinkName, qty, price }]);
+                }
+                if (drinkSelectRef.current) drinkSelectRef.current.value = "";
+                if (drinkQtyRef.current) drinkQtyRef.current.value = 1;
             };
 
             const submitOrder = () => {
@@ -540,6 +424,7 @@
 
                     peopleQtyRef.current.value = "";
                     libreObsRef.current.value = "";
+                    setPeopleQtyInput('');
                 } else {
                     const empQty = parseInt(empanadasRef.current.value) || 0;
                     if (currentPizzas.length === 0 && empQty === 0 && currentDrinks.length === 0) return showAlert("Pedido vacío");
@@ -550,6 +435,7 @@
                     setCurrentPizzas([]);
                     setCurrentDrinks([]);
                     empanadasRef.current.value = "";
+                    setEmpQtyInput('');
                 }
                 clientNameRef.current.value = "";
                 clientNameRef.current.focus();
@@ -593,110 +479,69 @@
                     {/* MODAL CONFIG PRECIOS */}
                     {showPriceConfig && (
                         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white p-6 rounded-lg max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-bold flex items-center gap-2"><Settings /> Configuración</h2>
-                                    <button onClick={() => setShowPriceConfig(false)} className="text-gray-400 hover:text-gray-700"><X size={24} /></button>
-                                </div>
-                                {/* TABS */}
-                                <div className="flex gap-2 mb-4 border-b border-gray-200">
-                                    <button onClick={() => setConfigTab('precios')} className={`px-4 py-2 font-bold text-sm border-b-2 transition ${configTab === 'precios' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>Precios</button>
-                                    <button onClick={() => setConfigTab('ticket')} className={`px-4 py-2 font-bold text-sm border-b-2 transition ${configTab === 'ticket' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>Ticket</button>
+                            <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                                <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 shrink-0">
+                                    <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800"><Settings /> Configuración de Precios</h2>
+                                    <button onClick={() => setShowPriceConfig(false)} className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-200"><X size={22} /></button>
                                 </div>
 
-                                {configTab === 'precios' && (
-                                    <div className="space-y-4">
-                                        {/* CAJA */}
-                                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                                            <label className="font-bold text-blue-800 block mb-1 flex items-center gap-2"><PackageIcon size={16} /> Precio de la Caja (por pizza)</label>
-                                            <input type="number" key={`box-${showPriceConfig}`} defaultValue={localPrices.box || 0} onChange={e => setLocalPrices({ ...localPrices, box: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-blue-300 rounded font-bold text-lg" />
+                                <div className="p-4 overflow-y-auto flex-1 space-y-4">
+                                    {/* CAJA */}
+                                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                                        <label className="font-bold text-blue-800 block mb-1 flex items-center gap-2"><PackageIcon size={16} /> Precio de la Caja (por pizza)</label>
+                                        <input type="number" key={`box-${showPriceConfig}`} defaultValue={localPrices.box || 0} onChange={e => setLocalPrices({ ...localPrices, box: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-blue-300 rounded font-bold text-lg" />
+                                    </div>
+                                    {/* EMPANADAS */}
+                                    <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
+                                        <label className="font-bold text-yellow-800 block mb-1">Precio Empanada Unitaria</label>
+                                        <input type="number" key={`emp-${showPriceConfig}`} defaultValue={localPrices.empanada} onChange={e => setLocalPrices({ ...localPrices, empanada: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-yellow-300 rounded font-bold text-lg" />
+                                    </div>
+                                    {/* MESA LIBRE */}
+                                    <div className="bg-purple-50 p-3 rounded border border-purple-200">
+                                        <label className="font-bold text-purple-800 block mb-1 flex items-center gap-2"><Users size={16} /> Precio Mesa Libre (por persona)</label>
+                                        <input type="number" key={`libre-${showPriceConfig}`} defaultValue={localPrices.pizzaLibreH || 0} onChange={e => setLocalPrices({ ...localPrices, pizzaLibreH: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-purple-300 rounded font-bold text-lg" />
+                                    </div>
+                                    {/* PIZZAS */}
+                                    <div>
+                                        <h3 className="font-bold border-b pb-2 text-orange-800 flex items-center gap-2"><Pizza size={16} /> Pizzas (Entera / Media)</h3>
+                                        <div className="space-y-2 mt-2">
+                                            {Object.keys(localPrices.flavors || {}).map(f => (
+                                                <div key={f} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
+                                                    <div className="flex-1 font-bold text-sm text-gray-700">{f}</div>
+                                                    <input type="number" placeholder="Entera" defaultValue={localPrices.flavors[f]?.entera} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], entera: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <input type="number" placeholder="Media" defaultValue={localPrices.flavors[f]?.media} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], media: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <button onClick={() => { const { [f]: _, ...rest } = localPrices.flavors; setLocalPrices({ ...localPrices, flavors: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
+                                                </div>
+                                            ))}
                                         </div>
-                                        {/* EMPANADAS */}
-                                        <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                                            <label className="font-bold text-yellow-800 block mb-1">Precio Empanada Unitaria</label>
-                                            <input type="number" key={`emp-${showPriceConfig}`} defaultValue={localPrices.empanada} onChange={e => setLocalPrices({ ...localPrices, empanada: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-yellow-300 rounded font-bold text-lg" />
-                                        </div>
-                                        {/* MESA LIBRE */}
-                                        <div className="bg-purple-50 p-3 rounded border border-purple-200">
-                                            <label className="font-bold text-purple-800 block mb-1 flex items-center gap-2"><Users size={16} /> Precio Mesa Libre (por persona)</label>
-                                            <input type="number" key={`libre-${showPriceConfig}`} defaultValue={localPrices.pizzaLibreH || 0} onChange={e => setLocalPrices({ ...localPrices, pizzaLibreH: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-purple-300 rounded font-bold text-lg" />
-                                        </div>
-                                        {/* PIZZAS */}
-                                        <div>
-                                            <h3 className="font-bold border-b pb-2 text-orange-800 flex items-center gap-2"><Pizza size={16} /> Pizzas (Entera / Media)</h3>
-                                            <div className="space-y-2 mt-2">
-                                                {Object.keys(localPrices.flavors || {}).map(f => (
-                                                    <div key={f} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
-                                                        <div className="flex-1 font-bold text-sm text-gray-700">{f}</div>
-                                                        <input type="number" placeholder="Entera" defaultValue={localPrices.flavors[f]?.entera} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], entera: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
-                                                        <input type="number" placeholder="Media" defaultValue={localPrices.flavors[f]?.media} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], media: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
-                                                        <button onClick={() => { const { [f]: _, ...rest } = localPrices.flavors; setLocalPrices({ ...localPrices, flavors: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2 mt-2">
-                                                <input type="text" value={newFlavorName} onChange={e => setNewFlavorName(e.target.value)} placeholder="Nuevo gusto..." className="flex-1 p-2 border rounded text-sm" />
-                                                <button onClick={() => { if (newFlavorName.trim()) { setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [newFlavorName.trim()]: { entera: 0, media: 0 } } }); setNewFlavorName(''); } }} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
-                                            </div>
-                                        </div>
-                                        {/* BEBIDAS */}
-                                        <div>
-                                            <h3 className="font-bold border-b pb-2 text-blue-800 flex items-center gap-2"><CupSoda size={16} /> Bebidas</h3>
-                                            <div className="space-y-2 mt-2">
-                                                {Object.entries(localPrices.drinks || {}).map(([name, price]) => (
-                                                    <div key={name} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
-                                                        <div className="flex-1 font-bold text-sm text-gray-700">{name}</div>
-                                                        <input type="number" defaultValue={price} onChange={e => setLocalPrices({ ...localPrices, drinks: { ...localPrices.drinks, [name]: parseInt(e.target.value) || 0 } })} className="w-24 p-1.5 border rounded text-center font-bold" />
-                                                        <button onClick={() => { const { [name]: _, ...rest } = localPrices.drinks; setLocalPrices({ ...localPrices, drinks: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2 mt-2">
-                                                <input type="text" value={newDrinkName} onChange={e => setNewDrinkName(e.target.value)} placeholder="Nombre bebida..." className="flex-1 p-2 border rounded text-sm" />
-                                                <input type="number" value={newDrinkPrice} onChange={e => setNewDrinkPrice(e.target.value)} placeholder="Precio" className="w-24 p-2 border rounded text-sm text-center" />
-                                                <button onClick={() => { if (newDrinkName.trim()) { setLocalPrices({ ...localPrices, drinks: { ...(localPrices.drinks || {}), [newDrinkName.trim()]: parseInt(newDrinkPrice) || 0 } }); setNewDrinkName(''); setNewDrinkPrice(''); } }} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
-                                            </div>
+                                        <div className="flex gap-2 mt-2">
+                                            <input type="text" value={newFlavorName} onChange={e => setNewFlavorName(e.target.value)} placeholder="Nuevo gusto..." className="flex-1 p-2 border rounded text-sm" />
+                                            <button onClick={() => { if (newFlavorName.trim()) { setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [newFlavorName.trim()]: { entera: 0, media: 0 } } }); setNewFlavorName(''); } }} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
                                         </div>
                                     </div>
-                                )}
-
-                                {configTab === 'ticket' && (
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 p-3 rounded border border-gray-200 space-y-3">
-                                            <div>
-                                                <label className="font-bold text-gray-700 block mb-1">Nombre del Local</label>
-                                                <input type="text" defaultValue={localPrices.ticket?.headerName ?? 'Rivera Club'} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), headerName: e.target.value } })} placeholder="Rivera Club" className="w-full p-2 border rounded" />
-                                            </div>
-                                            <div>
-                                                <label className="font-bold text-gray-700 block mb-1">Dirección</label>
-                                                <input type="text" defaultValue={localPrices.ticket?.address ?? 'Esperanza, Santa Fe'} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), address: e.target.value } })} placeholder="Esperanza, Santa Fe" className="w-full p-2 border rounded" />
-                                            </div>
-                                            <div>
-                                                <label className="font-bold text-gray-700 block mb-1">Mensaje final del ticket</label>
-                                                <input type="text" defaultValue={localPrices.ticket?.message ?? '¡Gracias por su visita!'} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), message: e.target.value } })} placeholder="¡Gracias por su visita!" className="w-full p-2 border rounded" />
-                                            </div>
-                                            <div>
-                                                <label className="font-bold text-gray-700 block mb-1">Tamaño de letra</label>
-                                                <select defaultValue={localPrices.ticket?.fontSize || '14px'} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), fontSize: e.target.value } })} className="w-full p-2 border rounded">
-                                                    <option value="12px">Normal (12px)</option>
-                                                    <option value="14px">Mediano (14px)</option>
-                                                    <option value="18px">Grande (18px)</option>
-                                                    <option value="22px">Muy Grande (22px)</option>
-                                                </select>
-                                            </div>
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input type="checkbox" defaultChecked={localPrices.ticket?.printPrice || false} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), printPrice: e.target.checked } })} className="w-5 h-5" />
-                                                <span className="font-bold text-gray-700">Imprimir precio total en el ticket</span>
-                                            </label>
-                                            <label className="flex items-center gap-3 cursor-pointer mt-2">
-                                                <input type="checkbox" defaultChecked={localPrices.ticket?.simpleTicket || false} onChange={e => setLocalPrices({ ...localPrices, ticket: { ...(localPrices.ticket || {}), simpleTicket: e.target.checked } })} className="w-5 h-5" />
-                                                <span className="font-bold text-gray-700">Ticket Simple (Solo nombre y pedido, grande y centrado para 58mm)</span>
-                                            </label>
+                                    {/* BEBIDAS */}
+                                    <div>
+                                        <h3 className="font-bold border-b pb-2 text-blue-800 flex items-center gap-2"><CupSoda size={16} /> Bebidas</h3>
+                                        <div className="space-y-2 mt-2">
+                                            {Object.entries(localPrices.drinks || {}).map(([name, price]) => (
+                                                <div key={name} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
+                                                    <div className="flex-1 font-bold text-sm text-gray-700">{name}</div>
+                                                    <input type="number" defaultValue={price} onChange={e => setLocalPrices({ ...localPrices, drinks: { ...localPrices.drinks, [name]: parseInt(e.target.value) || 0 } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <button onClick={() => { const { [name]: _, ...rest } = localPrices.drinks; setLocalPrices({ ...localPrices, drinks: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2 mt-2">
+                                            <input type="text" value={newDrinkName} onChange={e => setNewDrinkName(e.target.value)} placeholder="Nombre bebida..." className="flex-1 p-2 border rounded text-sm" />
+                                            <input type="number" value={newDrinkPrice} onChange={e => setNewDrinkPrice(e.target.value)} placeholder="Precio" className="w-24 p-2 border rounded text-sm text-center" />
+                                            <button onClick={() => { if (newDrinkName.trim()) { setLocalPrices({ ...localPrices, drinks: { ...(localPrices.drinks || {}), [newDrinkName.trim()]: parseInt(newDrinkPrice) || 0 } }); setNewDrinkName(''); setNewDrinkPrice(''); } }} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
                                         </div>
                                     </div>
-                                )}
+                                </div>
 
-                                <button onClick={() => { setPrices(localPrices); setShowPriceConfig(false); }} className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-bold shadow-lg">GUARDAR Y CERRAR</button>
+                                <div className="p-4 border-t border-gray-200 bg-gray-50 shrink-0 shadow-md">
+                                    <button onClick={() => { setPrices(localPrices); setShowPriceConfig(false); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold text-lg shadow transition">GUARDAR Y CERRAR</button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -721,9 +566,20 @@
                                 <button onClick={() => setIsLibre(!isLibre)} className={`flex flex-col items-center justify-center px-4 py-2 rounded border h-full ${isLibre ? 'bg-purple-100 border-purple-500 text-purple-700' : 'bg-white border-gray-300 text-gray-500'}`}><span className="text-xs font-black">{isLibre ? 'MESA LIBRE' : 'A LA CARTA'}</span><Users size={20} /></button>
                             </div>
                             {isLibre && (
-                                <div className="mt-2 flex gap-2">
-                                    <input ref={peopleQtyRef} type="number" placeholder="Cant. Personas" className="w-32 p-2 border border-purple-300 rounded text-center font-bold" />
-                                    <input ref={libreObsRef} type="text" placeholder="Observación..." className="flex-1 p-2 border border-purple-300 rounded" />
+                                <div className="mt-2 space-y-3">
+                                    <div className="flex gap-2">
+                                        <input ref={peopleQtyRef} type="number" placeholder="Cant. Personas" value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-36 p-2 border-2 border-purple-400 rounded text-center font-bold text-lg" />
+                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa..." className="flex-1 p-2 border-2 border-purple-400 rounded" />
+                                    </div>
+                                    
+                                    {/* LISTADO DE MESAS LIBRES POR LAS DUDAS AL INICIALIZAR */}
+                                    <div className="bg-slate-200 border-2 border-purple-300 rounded-lg p-2 flex flex-col h-[55vh]">
+                                        <div className="bg-purple-200 text-purple-900 px-3 py-1.5 rounded text-xs font-black uppercase flex justify-between items-center mb-2">
+                                            <span className="flex items-center gap-1.5"><Users size={15} /> Mesas Libres Activas</span>
+                                            <span className="bg-purple-700 text-white px-2 py-0.5 rounded-full text-[11px]">{activeLibres.length}</span>
+                                        </div>
+                                        <ActiveLibresList libres={activeLibres} onRound={handleRound} onClose={handleCloseLibre} />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -731,45 +587,115 @@
                         {/* PANEL CARTA */}
                         {!isLibre && (
                             <div className="flex-1 flex flex-col min-h-0 bg-gray-100 relative">
-                                <div className="p-2 space-y-2 shrink-0 border-b border-gray-200 bg-gray-50 shadow-md z-10 max-h-[35vh] overflow-y-auto">
-                                    <div className="bg-orange-50 p-2 rounded border border-orange-200 shadow-sm space-y-1">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <h3 className="font-bold text-orange-800 flex items-center gap-2"><Pizza size={18} /> Pizzas</h3>
+                                <div className="p-2.5 space-y-2.5 shrink-0 border-b border-gray-200 bg-gray-50 shadow-md z-10">
+                                    {/* BOTONERA INTELIGENTE DE GUSTOS */}
+                                    <div className="bg-orange-50 p-2.5 rounded-lg border border-orange-200 shadow-sm space-y-2">
+                                        <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <label className={`flex items-center gap-1.5 cursor-pointer px-2 py-1 rounded border text-sm font-bold ${withBox ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-white border-gray-300 text-gray-500'}`}>
-                                                    <input type="checkbox" checked={withBox} onChange={e => setWithBox(e.target.checked)} className="w-4 h-4" />
-                                                    <PackageIcon size={14} /> Caja (${prices.box || 0})
+                                                <h3 className="font-bold text-orange-900 flex items-center gap-1.5 text-sm">
+                                                    <Pizza size={18} className="text-orange-600" /> Gustos de Pizza
+                                                </h3>
+                                                {selectedFlavors.length > 0 && (
+                                                    <button onClick={() => setSelectedFlavors([])} className="text-xs text-orange-600 hover:text-orange-800 underline font-semibold">
+                                                        Limpiar ({selectedFlavors.length})
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <label className={`flex items-center gap-1.5 cursor-pointer px-2 py-1 rounded border text-xs font-bold transition ${withBox ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-white border-gray-300 text-gray-600'}`}>
+                                                    <input type="checkbox" checked={withBox} onChange={e => setWithBox(e.target.checked)} className="w-3.5 h-3.5" />
+                                                    <PackageIcon size={13} /> Caja (+${prices.box || 0})
                                                 </label>
-                                                <div className="flex bg-white rounded border border-gray-300 overflow-hidden text-sm">
-                                                    <button onClick={() => setPizzaTypeUI('entera')} className={`px-3 py-1 font-bold ${pizzaTypeUI === 'entera' ? 'bg-orange-500 text-white' : 'text-gray-600'}`}>Entera</button>
-                                                    <button onClick={() => setPizzaTypeUI('mitad')} className={`px-3 py-1 font-bold ${pizzaTypeUI === 'mitad' ? 'bg-orange-500 text-white' : 'text-gray-600'}`}>Media</button>
+                                                {/* Selector Entera / Media SIEMPRE VISIBLE */}
+                                                <div className="flex bg-white rounded border border-gray-300 overflow-hidden text-xs shadow-sm">
+                                                    <button onClick={() => setPizzaTypeUI('entera')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'entera' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Entera</button>
+                                                    <button onClick={() => setPizzaTypeUI('mitad')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'mitad' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Media</button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-1">
-                                            <select ref={flavor1Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 1 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
-                                            <select ref={flavor2Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 2 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
-                                            <select ref={flavor3Ref} className="w-full p-2 border rounded bg-white text-sm font-bold"><option value="">-- Gusto 3 --</option>{pizzaFlavors.map(f => <option key={f} value={f} className="text-lg">{f}</option>)}</select>
+
+                                        {/* GRID TÁCTIL DE GUSTOS (TOTALMENTE VISIBLE) */}
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 p-1 bg-white/60 rounded border border-orange-100">
+                                            {pizzaFlavors.map(f => {
+                                                const idx = selectedFlavors.indexOf(f);
+                                                const isSelected = idx !== -1;
+                                                return (
+                                                    <button
+                                                        key={f}
+                                                        type="button"
+                                                        onClick={() => handleFlavorClick(f)}
+                                                        className={`relative p-2 rounded-lg font-bold text-xs text-center border transition-all transform active:scale-95 flex flex-col items-center justify-center min-h-[42px] ${
+                                                            isSelected 
+                                                                ? 'bg-orange-500 text-white border-orange-600 shadow-md ring-2 ring-orange-400 font-black' 
+                                                                : 'bg-white text-gray-800 border-gray-300 hover:bg-orange-100 hover:border-orange-300'
+                                                        }`}
+                                                    >
+                                                        {isSelected && (
+                                                            <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-orange-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow border border-orange-600">
+                                                                {idx + 1}º
+                                                            </span>
+                                                        )}
+                                                        <span className="truncate w-full">{f}</span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                        <div className="flex gap-2 items-center pt-1"><input ref={obsRef} type="text" placeholder="Observación..." className="flex-1 p-2 border rounded text-sm bg-white" /><div className="flex items-center gap-1"><input ref={pizzaQtyRef} type="number" min="1" defaultValue="1" className="w-14 p-2 border rounded text-center font-bold" /><button onClick={addPizza} className="bg-orange-600 text-white px-4 py-2 rounded font-bold text-sm uppercase shadow">+ AGREGAR</button></div></div>
+
+                                        {/* RESUMEN Y AGREGAR */}
+                                        <div className="flex gap-2 items-center pt-1 border-t border-orange-200/60">
+                                            <div className="flex-1 bg-white px-2.5 py-1.5 rounded border border-orange-200 text-xs truncate">
+                                                {selectedFlavors.length === 0 ? (
+                                                    <span className="text-gray-400 italic">👉 Tocá 1 o 2 gustos para armar la pizza</span>
+                                                ) : (
+                                                    <span className="font-bold text-orange-900">
+                                                        🍕 {pizzaTypeUI === 'mitad' ? 'Media ' : ''}{selectedFlavors.length === 1 ? selectedFlavors[0] : selectedFlavors.join(' y ')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <input ref={obsRef} type="text" placeholder="Obs..." className="w-24 p-1.5 border rounded text-xs bg-white" />
+                                            <div className="flex items-center gap-1">
+                                                <input ref={pizzaQtyRef} type="number" min="1" defaultValue="1" className="w-12 p-1.5 border rounded text-center font-bold text-xs" />
+                                                <button 
+                                                    onClick={addPizza} 
+                                                    disabled={selectedFlavors.length === 0}
+                                                    className={`px-3 py-1.5 rounded font-bold text-xs uppercase shadow transition ${selectedFlavors.length > 0 ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                                                >
+                                                    + AGREGAR
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* EMPANADAS Y BEBIDAS RÁPIDAS */}
                                     <div className="flex gap-2 items-stretch">
-                                        <div className="flex-[0.8] bg-yellow-50 p-2 rounded border border-yellow-200 flex flex-col justify-center shadow-sm">
+                                        <div className="flex-[0.7] bg-yellow-50 p-2 rounded-lg border border-yellow-200 flex flex-col justify-center shadow-sm">
                                             <div className="flex items-center justify-center gap-1 mb-1"><Utensils size={14} className="text-yellow-700" /><span className="font-bold text-yellow-800 text-xs text-center leading-tight">Empanadas<br/>(${prices.empanada})</span></div>
-                                            <input ref={empanadasRef} type="number" placeholder="0" className="w-full p-1.5 border border-yellow-300 rounded font-bold text-center text-lg" />
+                                            <input ref={empanadasRef} type="number" placeholder="0" value={empQtyInput} onChange={e => setEmpQtyInput(e.target.value)} className="w-full p-1.5 border border-yellow-300 rounded font-bold text-center text-lg" />
                                         </div>
-                                        <div className="flex-[1.2] bg-blue-50 p-2 rounded border border-blue-200 shadow-sm flex flex-col justify-between">
+
+                                        {/* BOTONERA EXPRESS DE BEBIDAS */}
+                                        <div className="flex-[1.3] bg-blue-50 p-2 rounded-lg border border-blue-200 shadow-sm flex flex-col justify-between">
                                             <div className="flex justify-between items-center mb-1">
-                                                <h3 className="font-bold text-blue-800 flex items-center gap-1 text-xs"><CupSoda size={14} /> Bebidas</h3>
+                                                <h3 className="font-bold text-blue-900 flex items-center gap-1 text-xs"><CupSoda size={14} className="text-blue-600" /> Bebidas Rápidas</h3>
+                                                <span className="text-[10px] text-blue-600 font-semibold">Tap = +1</span>
                                             </div>
-                                            <div className="flex gap-1 items-center">
-                                                <select ref={drinkSelectRef} className="flex-1 p-2 border rounded bg-white text-base font-bold">
-                                                    <option value="">-- Bebida --</option>
-                                                    {Object.keys(prices.drinks || {}).map(d => <option key={d} value={d} className="text-lg">{d}</option>)}
-                                                </select>
-                                                <input ref={drinkQtyRef} type="number" min="1" defaultValue="1" className="w-12 p-2 border rounded text-center font-bold text-base" />
-                                                <button onClick={addDrink} className="bg-blue-600 text-white px-3 py-2 rounded font-bold text-base uppercase shadow">+</button>
-                                            </div>
+                                            {Object.keys(prices.drinks || {}).length === 0 ? (
+                                                <div className="text-xs text-gray-400 italic text-center py-2">Sin bebidas cargadas</div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 gap-1.5 p-0.5">
+                                                    {Object.entries(prices.drinks || {}).map(([dName, dPrice]) => (
+                                                        <button
+                                                            key={dName}
+                                                            type="button"
+                                                            onClick={() => addDrinkQuick(dName)}
+                                                            className="bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 hover:border-blue-400 p-1.5 rounded text-xs font-bold shadow-sm active:scale-95 transition flex justify-between items-center text-left"
+                                                        >
+                                                            <span className="truncate mr-1">{dName}</span>
+                                                            <span className="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-black shrink-0">${dPrice}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -791,22 +717,39 @@
                             </div>
                         )}
 
-                        {/* BOTÓN ENVIAR */}
-                        <div className="p-3 bg-white border-t border-gray-200 shrink-0 z-20 shadow-lg">
-                            <button onClick={submitOrder} className={`w-full py-3 rounded-lg font-bold text-xl text-white shadow ${isLibre ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{isLibre ? 'INICIAR MESA LIBRE' : 'ENVIAR PEDIDO'}</button>
-                        </div>
-
-                        {/* LISTA MESAS LIBRES (Optimizada con Memo) */}
-                        <div className="bg-slate-200 border-t-4 border-slate-300 shrink-0 h-[30vh] flex flex-col">
-                            <div className="bg-slate-300 px-3 py-2 text-xs font-bold text-slate-700 uppercase flex justify-between"><span>Mesas Libres</span><span className="bg-slate-400 text-white px-2 rounded-full">{activeLibres.length}</span></div>
-                            <ActiveLibresList libres={activeLibres} onRound={handleRound} onClose={handleCloseLibre} />
+                        {/* BOTÓN ENVIAR Y TOTAL DESTACADO */}
+                        <div className="p-3 bg-white border-t border-gray-200 shrink-0 z-20 shadow-lg flex flex-col gap-2">
+                            <div className={`flex justify-between items-center px-4 py-2.5 rounded-xl border shadow-sm ${isLibre ? 'bg-purple-50 border-purple-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                                <span className={`font-black text-sm uppercase tracking-wide flex items-center gap-1.5 ${isLibre ? 'text-purple-800' : 'text-emerald-800'}`}>
+                                    <DollarSign size={18} className={isLibre ? 'text-purple-600' : 'text-emerald-600'} />
+                                    {isLibre ? 'Total Estimado Mesa:' : 'Total Pedido:'}
+                                </span>
+                                <span className={`text-3xl font-black tracking-tight ${isLibre ? 'text-purple-700' : 'text-emerald-600'}`}>
+                                    ${calculatedTotal.toLocaleString()}
+                                </span>
+                            </div>
+                            <button onClick={submitOrder} className={`w-full py-3 rounded-lg font-bold text-xl text-white shadow transition ${isLibre ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{isLibre ? 'INICIAR MESA LIBRE' : 'ENVIAR PEDIDO'}</button>
                         </div>
                     </div>
 
-                    {/* LISTA COCINA (Optimizada con Memo) */}
+                    {/* LISTA COCINA Y MESAS LIBRES (COLUMNA DERECHA) */}
                     <div className="w-1/2 bg-slate-100 flex flex-col h-full overflow-hidden border-l border-gray-300">
-                        <div className="p-4 bg-slate-800 text-white shadow-md flex justify-between items-center shrink-0"><h2 className="font-bold flex items-center gap-2"><Monitor size={18} /> Pedidos Cocina</h2><span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{orders.length}</span></div>
+                        <div className="p-3 bg-slate-800 text-white shadow-md flex justify-between items-center shrink-0">
+                            <h2 className="font-bold flex items-center gap-2 text-sm"><Monitor size={18} /> Pedidos Cocina</h2>
+                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-full font-bold">{orders.length}</span>
+                        </div>
+                        
+                        {/* GRID 2 COLUMNAS DE PEDIDOS DE COCINA */}
                         <KitchenOrdersList orders={orders} onComplete={handleCompleteOrder} onDelete={handleDeleteOrder} prices={prices} />
+
+                        {/* MESAS LIBRES ACTIVAS EN COLUMNA DERECHA (TAMAÑO MÁS GRANDE: 32vh) */}
+                        <div className="bg-slate-200 border-t-4 border-slate-300 shrink-0 h-[32vh] flex flex-col shadow-inner">
+                            <div className="bg-slate-300 px-3 py-2 text-xs font-bold text-slate-800 uppercase flex justify-between items-center border-b border-slate-400/50">
+                                <span className="flex items-center gap-1.5"><Users size={16} className="text-purple-600" /> Mesas Libres Activas</span>
+                                <span className="bg-purple-600 text-white px-2.5 py-0.5 rounded-full font-black text-xs">{activeLibres.length}</span>
+                            </div>
+                            <ActiveLibresList libres={activeLibres} onRound={handleRound} onClose={handleCloseLibre} />
+                        </div>
                     </div>
                 </div>
             );
@@ -859,8 +802,7 @@
                                         <div className={`p-3 flex justify-between items-start border-b border-white/10 ${o.type === 'libre' ? 'bg-indigo-800' : 'bg-gray-700'}`}>
                                             <div className="overflow-hidden"><h3 className="text-3xl font-black text-yellow-400 truncate leading-none mb-1">{o.client}</h3><div className="flex items-center gap-2 text-gray-300 font-mono text-sm"><span>{o.timestamp}</span>{o.type === 'libre' && <span className="text-indigo-200 font-bold">• MESA LIBRE</span>}</div></div>
                                             <div className="flex gap-1">
-                                                <button onClick={() => handlePrintTicket(o, prices?.ticket, prices)} className="bg-blue-600/50 hover:bg-blue-600 text-white p-2 rounded" title="Imprimir"><Printer size={20} /></button>
-                                                <button onClick={() => handleComplete(o)} className="bg-green-600/50 hover:bg-green-600 text-white p-2 rounded" title="Completar"><Check size={20} /></button>
+                                                <button onClick={() => handleComplete(o)} className="bg-green-600/50 hover:bg-green-600 text-white px-3 py-2 rounded font-bold flex items-center gap-1" title="Completar"><Check size={20} /> Listo</button>
                                             </div>
                                         </div>
                                         <div className="p-4 space-y-4">
