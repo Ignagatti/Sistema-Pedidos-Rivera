@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -42,16 +42,13 @@ async function writeJSON(filePath, data) {
 // Guarda una copia de seguridad con timestamp (solo orders, libres, history)
 // Los precios se guardan por separado y no se resetean nunca con cerrar caja.
 async function writeBackup(key, data) {
-    // Solo hacemos backup de datos operativos, no de precios (ya que precios son config permanente)
     if (!['orders', 'libres', 'history'].includes(key)) return;
     try {
         const now = new Date();
         const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
         const backupFile = path.join(BACKUP_PATH, `${key}_${stamp}.json`);
-        // Solo escribimos si no existe ya un backup de ese minuto (evitar I/O excesivo)
         try { await fs.access(backupFile); } catch (_) {
             await fs.writeFile(backupFile, JSON.stringify(data, null, 2), 'utf-8');
-            // Limpiar backups viejos: mantener solo los últimos 10 por key
             await cleanOldBackups(key);
         }
     } catch (err) {
@@ -63,7 +60,7 @@ async function cleanOldBackups(key) {
     try {
         const files = (await fs.readdir(BACKUP_PATH))
             .filter(f => f.startsWith(`${key}_`) && f.endsWith('.json'))
-            .sort(); // orden alfabetico = orden cronologico por el formato de nombre
+            .sort();
         if (files.length > 10) {
             const toDelete = files.slice(0, files.length - 10);
             await Promise.all(toDelete.map(f => fs.unlink(path.join(BACKUP_PATH, f)).catch(() => {})));
@@ -84,7 +81,6 @@ async function writeFullBackup() {
         ]);
         const fullBackupFile = path.join(BACKUP_PATH, `full_backup_${stamp}.json`);
         await fs.writeFile(fullBackupFile, JSON.stringify({ orders, libres, prices, history }, null, 2), 'utf-8');
-        // Mantener solo los últimos 5 backups completos
         const fullFiles = (await fs.readdir(BACKUP_PATH))
             .filter(f => f.startsWith('full_backup_'))
             .sort();
@@ -115,75 +111,99 @@ function createWindow() {
     win.loadFile('index.html');
 }
 
+// IPC Handlers registrados a nivel raíz
+ipcMain.handle('window:new', () => {
+    createWindow();
+    return true;
+});
+
+ipcMain.handle('storage:loadInitial', async () => {
+    const [orders, libres, prices, history] = await Promise.all([
+        readJSON(FILES.orders, []),
+        readJSON(FILES.libres, []),
+        readJSON(FILES.prices, {}),
+        readJSON(FILES.history, [])
+    ]);
+    return { orders, libres, prices, history };
+});
+
+ipcMain.handle('storage:set', async (event, { key, value }) => {
+    if (FILES[key]) {
+        const success = await writeJSON(FILES[key], value);
+        writeBackup(key, value).catch(() => {});
+        BrowserWindow.getAllWindows().forEach(w => w.webContents.send('storage:update', { key, value }));
+        return success;
+    }
+    return false;
+});
+
+ipcMain.handle('storage:clearAll', async () => {
+    await writeFullBackup();
+
+    try {
+        const allFiles = await fs.readdir(BACKUP_PATH);
+        const opKeys = ['orders', 'libres', 'history'];
+        const toDelete = allFiles.filter(f =>
+            opKeys.some(k => f.startsWith(`${k}_`)) && f.endsWith('.json')
+        );
+        await Promise.all(toDelete.map(f => fs.unlink(path.join(BACKUP_PATH, f)).catch(() => {})));
+    } catch (_) {}
+
+    const defaults = { orders: [], libres: [], history: [] };
+    await Promise.all([
+        writeJSON(FILES.orders, defaults.orders),
+        writeJSON(FILES.libres, defaults.libres),
+        writeJSON(FILES.history, defaults.history)
+    ]);
+    BrowserWindow.getAllWindows().forEach(w => {
+        w.webContents.send('storage:update', { key: 'orders',  value: defaults.orders });
+        w.webContents.send('storage:update', { key: 'libres',  value: defaults.libres });
+        w.webContents.send('storage:update', { key: 'history', value: defaults.history });
+    });
+    return true;
+});
+
+// Guardar reporte como PDF directamente sin diálogo de impresión
+ipcMain.handle('report:savePDF', async (event, { defaultFilename = 'reporte_caja.pdf' } = {}) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return { success: false, error: 'Ventana no disponible' };
+
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+        title: 'Guardar Reporte como PDF',
+        defaultPath: path.join(app.getPath('downloads'), defaultFilename),
+        filters: [{ name: 'Documento PDF (*.pdf)', extensions: ['pdf'] }]
+    });
+
+    if (canceled || !filePath) return { success: false, canceled: true };
+
+    try {
+        const pdfBuffer = await event.sender.printToPDF({
+            pageSize: 'A4',
+            landscape: false,
+            margins: {
+                top: 0.59, // 15mm (~0.59 inches)
+                bottom: 0.59,
+                left: 0.59,
+                right: 0.59
+            },
+            printBackground: true,
+            preferCSSPageSize: true
+        });
+
+        await fs.writeFile(filePath, pdfBuffer);
+        return { success: true, filePath };
+    } catch (err) {
+        console.error('Error al generar PDF:', err);
+        return { success: false, error: err.message };
+    }
+});
+
 app.whenReady().then(async () => {
     await ensureBackupDir();
-
-    // Abrir nueva ventana
-    ipcMain.handle('window:new', () => {
-        createWindow();
-        return true;
-    });
-
-    // Carga inicial de todo
-    ipcMain.handle('storage:loadInitial', async () => {
-        const [orders, libres, prices, history] = await Promise.all([
-            readJSON(FILES.orders, []),
-            readJSON(FILES.libres, []),
-            readJSON(FILES.prices, {}),
-            readJSON(FILES.history, [])
-        ]);
-        return { orders, libres, prices, history };
-    });
-
-    // Guardar datos (Genérico) + backup automático
-    ipcMain.handle('storage:set', async (event, { key, value }) => {
-        if (FILES[key]) {
-            const success = await writeJSON(FILES[key], value);
-            // Backup automático (no bloquea, se hace en paralelo)
-            writeBackup(key, value).catch(() => {});
-            // Avisar a otras ventanas
-            BrowserWindow.getAllWindows().forEach(w => w.webContents.send('storage:update', { key, value }));
-            return success;
-        }
-        return false;
-    });
-
-    // Borrar todo (Cerrar Caja) - SOLO borra operativos, NUNCA los precios
-    ipcMain.handle('storage:clearAll', async () => {
-        // 1. Backup final completo antes de limpiar (queda como respaldo del cierre)
-        await writeFullBackup();
-
-        // 2. Limpiar los backups individuales de orders/libres/history (ya no hacen falta)
-        //    Los precios (prices.json) y sus datos NUNCA se tocan.
-        try {
-            const allFiles = await fs.readdir(BACKUP_PATH);
-            const opKeys = ['orders', 'libres', 'history'];
-            const toDelete = allFiles.filter(f =>
-                opKeys.some(k => f.startsWith(`${k}_`)) && f.endsWith('.json')
-            );
-            await Promise.all(toDelete.map(f => fs.unlink(path.join(BACKUP_PATH, f)).catch(() => {})));
-        } catch (_) {}
-
-        // 3. Resetear los archivos operativos
-        const defaults = { orders: [], libres: [], history: [] };
-        await Promise.all([
-            writeJSON(FILES.orders, defaults.orders),
-            writeJSON(FILES.libres, defaults.libres),
-            writeJSON(FILES.history, defaults.history)
-        ]);
-        BrowserWindow.getAllWindows().forEach(w => {
-            w.webContents.send('storage:update', { key: 'orders',  value: defaults.orders });
-            w.webContents.send('storage:update', { key: 'libres',  value: defaults.libres });
-            w.webContents.send('storage:update', { key: 'history', value: defaults.history });
-        });
-        return true;
-    });
-
     createWindow();
 });
 
 // Backup completo al cerrar la app normalmente
-// before-quit no espera async callbacks, así que bloqueamos el quit manualmente
 let quitting = false;
 app.on('before-quit', (event) => {
     if (quitting) return;

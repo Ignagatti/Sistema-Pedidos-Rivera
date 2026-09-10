@@ -31,9 +31,57 @@
             color: white;
         }
 
-        /* Optimizaciones de renderizado */
         .fast-input {
             contain: content;
+        }
+
+        /* Reglas de exportación A4 Vertical (Portrait) con 15mm de margen */
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        @media print {
+            html, body {
+                background: #ffffff !important;
+                color: #111827 !important;
+                height: auto !important;
+                overflow: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .page-break-inside-avoid, .report-section, tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .page-break-before {
+                page-break-before: always !important;
+                break-before: always !important;
+            }
+
+            table {
+                page-break-inside: auto;
+                border-collapse: collapse;
+                width: 100%;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tfoot {
+                display: table-footer-group;
+            }
         }
     </style>
 </head>
@@ -60,9 +108,14 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-        // --- ICONOS (Optimizados como constantes) ---
-        const Icon = ({ d, color = "currentColor", size = 20, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{d}</svg>;
-        const Pizza = () => <Icon d={<><path d="M15 11h.01" /><path d="M11 15h.01" /><path d="M16 16h.01" /><path d="m2 16 20 6-6-20A20 20 0 0 0 2 16" /><path d="M5.71 17.11a17.04 17.04 0 0 1 11.4-11.4" /></>} />;
+        // --- ICONOS SVG ---
+        const Icon = ({ d, color = "currentColor", size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {d}
+            </svg>
+        );
+
+        const Pizza = (p) => <Icon {...p} d={<><path d="M15 11h.01" /><path d="M11 15h.01" /><path d="M16 16h.01" /><path d="m2 16 20 6-6-20A20 20 0 0 0 2 16" /><path d="M5.71 17.11a17.04 17.04 0 0 1 11.4-11.4" /></>} />;
         const ChefHat = (p) => <Icon {...p} d={<><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 1 0-7.454-3.489A3.999 3.999 0 0 0 5.273 13.61c.41.197.727.584.727 1.041V20a1 1 0 0 0 1 1h10z" /><path d="M6 17h12" /></>} />;
         const Trash2 = (p) => <Icon {...p} d={<><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></>} />;
         const Users = (p) => <Icon {...p} d={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>} />;
@@ -72,7 +125,7 @@
         const Settings = (p) => <Icon {...p} d={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V2a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>} />;
         const X = (p) => <Icon {...p} d={<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>} />;
         const ZoomIn = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="11" x2="11" y1="8" y2="14" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
-        const ZoomOut = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
+        const ZoomOut = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="11" x2="11" y1="8" y2="14" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
         const AlertCircle = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>} />;
         const Check = (p) => <Icon {...p} d={<><polyline points="20 6 9 17 4 12" /></>} />;
         const DollarSign = (p) => <Icon {...p} d={<><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>} />;
@@ -80,6 +133,9 @@
         const HelpCircle = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" x2="12.01" y1="17" y2="17" /></>} />;
         const PackageIcon = (p) => <Icon {...p} d={<><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></>} />;
         const CupSoda = (p) => <Icon {...p} d={<><path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.5a2 2 0 0 0 2-1.72L18 8" /><path d="M5 8h14" /><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0" /><line x1="12" x2="12" y1="8" y2="2" /></>} />;
+        const FileText = (p) => <Icon {...p} d={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></>} />;
+        const Download = (p) => <Icon {...p} d={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></>} />;
+        const Calendar = (p) => <Icon {...p} d={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></>} />;
 
         const DEFAULT_FLAVORS = ["Muzzarella", "Provenzal", "Cebolla", "Calabresa", "Margarita", "Napolitana", "Anchoa", "Rúcula", "Especial", "3 Quesos", "Roquefort"];
         const INITIAL_PRICES = {
@@ -93,148 +149,545 @@
         const storage = window.__BOCHAS_STORAGE__ || {
             loadInitial: async () => ({ orders: [], libres: [], prices: INITIAL_PRICES, history: [] }),
             set: async () => { },
+            openNewWindow: () => { },
+            clearAll: async () => { },
+            savePDF: async () => ({ success: false, error: 'No electron bridge' }),
             onUpdate: () => () => { }
         };
 
-        // --- COMPONENTES MEMORIZADOS (Para evitar lag) ---
-        // Estos componentes NO se redibujan cuando escribes en los inputs
+        const getLocalDateString = (dateObj = new Date()) => {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
 
-        const ActiveLibresList = React.memo(({ libres, onRound, onClose }) => {
-            return (
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                    {libres.map(l => (
-                        <div key={l.id} className="bg-white p-3 rounded border-l-4 border-purple-500 shadow flex justify-between items-center">
-                            <div><div className="font-bold text-purple-900">{l.client}</div><div className="text-xs text-gray-600">{l.people} pers. | {l.timestamp}</div></div>
-                            <div className="flex items-center gap-2">
-                                <div className="text-right mr-2"><div className="font-black text-2xl text-purple-600">{l.round}ª</div></div>
-                                <button onClick={() => onRound(l)} className="bg-purple-600 text-white px-3 py-2 rounded shadow font-bold text-sm hover:bg-purple-700">SUBIR</button>
-                                <button onClick={() => onClose(l)} className="text-red-400 p-2 hover:text-red-600"><Trash2 size={20} /></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        });
+        // --- COMPONENTE DE REPORTE Y GUARDADO DE PDF POR FECHA ---
+        const ReportModal = ({ isOpen, onClose, history, activeLibres, orders, prices }) => {
+            if (!isOpen) return null;
 
-        const KitchenOrdersList = React.memo(({ orders, onComplete, onDelete, prices }) => {
-            return (
-                <div className="flex-1 overflow-y-auto p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 content-start">
-                    {orders.map((o) => (
-                        <div key={o.id} className={`bg-white rounded-lg shadow border-l-4 ${o.type === 'libre' ? 'border-purple-500' : 'border-blue-500'} flex flex-col justify-between`}>
-                            <div className="p-2 border-b border-gray-100 bg-gray-50/70 rounded-t-lg flex items-start justify-between">
-                                <div className="overflow-hidden mr-1">
-                                    <div className="font-black text-base text-gray-800 truncate leading-snug">{o.client}</div>
-                                    <div className="text-[10px] text-gray-500 font-mono">{o.timestamp}</div>
-                                </div>
-                                <div className="flex flex-col items-end gap-1 shrink-0">
-                                    <div className="flex gap-1">
-                                        <button onClick={() => onComplete(o)} className="bg-green-100 text-green-600 p-1.5 rounded hover:bg-green-200 flex items-center gap-1 font-bold text-xs" title="Completar y Sumar"><Check size={14} /> Listo</button>
-                                        <button onClick={() => onDelete(o)} className="bg-red-100 text-red-600 p-1.5 rounded hover:bg-red-200" title="Eliminar"><Trash2 size={14} /></button>
-                                    </div>
-                                    {o.type === 'libre' ? <span className="text-purple-600 font-black text-xs">{o.round}ª RONDA</span> : <span className="text-sm font-bold text-green-700">${(o.totalPrice || 0).toLocaleString()}</span>}
-                                </div>
-                            </div>
-                            <div className="p-2 text-xs text-gray-700 space-y-0.5">
-                                {o.type === 'libre' && o.obs && <div className="text-orange-600 font-bold mb-1">⚠️ {o.obs}</div>}
-                                {o.pizzas.map((p, i) => (<div key={i} className="leading-tight">• <strong className="text-gray-900">{p.qty}x</strong> {p.description} {p.obs && <span className="text-orange-600 italic">({p.obs})</span>}</div>))}
-                                {o.drinks && o.drinks.map((d, i) => (<div key={`d${i}`} className="text-blue-700 font-bold leading-tight">• <strong>{d.qty}x</strong> {d.name}</div>))}
-                                {o.empanadas > 0 && <div className="font-bold text-yellow-700 mt-0.5">🥟 {o.empanadas} Empanadas</div>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        });
+            const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+            const [selectedDate, setSelectedDate] = useState(todayStr);
+            const [isSaving, setIsSaving] = useState(false);
+            const [saveStatus, setSaveStatus] = useState(null);
 
-        function BochasApp() {
-            const [view, setView] = useState('landing');
-            const [orders, setOrders] = useState([]);
-            const [activeLibres, setActiveLibres] = useState([]);
-            const [prices, setPrices] = useState(INITIAL_PRICES);
-            const [history, setHistory] = useState([]);
-            const [dialog, setDialog] = useState(null);
-
-            useEffect(() => {
-                let unsubscribe = () => { };
-                const init = async () => {
-                    const data = await storage.loadInitial();
-                    setOrders(data.orders || []);
-                    setActiveLibres(data.libres || []);
-                    // Siempre hacer merge con INITIAL_PRICES para que los gustos por defecto
-                    // estén siempre presentes, y se puedan agregar más en el futuro.
-                    const stored = data.prices || {};
-                    const mergedPrices = {
-                        ...INITIAL_PRICES,
-                        ...stored,
-                        flavors: { ...INITIAL_PRICES.flavors, ...(stored.flavors || {}) },
-                        drinks: stored.drinks || {},
-                        ticket: { ...INITIAL_PRICES.ticket, ...(stored.ticket || {}) }
-                    };
-                    setPrices(mergedPrices);
-                    setHistory(data.history || []);
-                    unsubscribe = storage.onUpdate(({ key, value }) => {
-                        if (key === 'orders') setOrders(value);
-                        if (key === 'libres') setActiveLibres(value);
-                        if (key === 'prices') {
-                            const merged = {
-                                ...INITIAL_PRICES, ...value,
-                                flavors: { ...INITIAL_PRICES.flavors, ...(value.flavors || {}) },
-                                drinks: value.drinks || {},
-                                ticket: { ...INITIAL_PRICES.ticket, ...(value.ticket || {}) }
-                            };
-                            setPrices(merged);
+            // Filtrar historial según la fecha seleccionada
+            const filteredHistory = useMemo(() => {
+                if (selectedDate === 'all') return history;
+                return history.filter(item => {
+                    if (item.date) return item.date === selectedDate;
+                    if (item.completedAt) {
+                        try {
+                            const itemDate = getLocalDateString(new Date(item.completedAt));
+                            return itemDate === selectedDate;
+                        } catch (_) {
+                            return item.completedAt.startsWith(selectedDate);
                         }
-                        if (key === 'history') setHistory(value);
+                    }
+                    return selectedDate === todayStr;
+                });
+            }, [history, selectedDate, todayStr]);
+
+            const isViewingToday = selectedDate === todayStr || selectedDate === 'all';
+            const displayActiveLibres = isViewingToday ? (activeLibres || []) : [];
+            const displayActiveCarta = isViewingToday ? (orders || []).filter(o => o.type !== 'libre') : [];
+
+            // Mesas Libres Cerradas (Facturadas)
+            const closedLibres = filteredHistory.filter(o => o.type === 'libre');
+            const totalLibresCerradas = closedLibres.reduce((sum, l) => sum + (Number(l.totalPrice) || ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
+            const totalPersonasLibresCerradas = closedLibres.reduce((sum, l) => sum + (Number(l.people) || 0), 0);
+
+            // Mesas Libres Activas
+            const totalLibresActivas = displayActiveLibres.reduce((sum, l) => sum + ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0)), 0);
+            const totalPersonasLibresActivas = displayActiveLibres.reduce((sum, l) => sum + (Number(l.people) || 0), 0);
+
+            // Total General Libres
+            const granTotalLibres = totalLibresCerradas + totalLibresActivas;
+            const granTotalPersonasLibres = totalPersonasLibresCerradas + totalPersonasLibresActivas;
+
+            // Pedidos A La Carta Completados
+            const completedCarta = filteredHistory.filter(o => o.type !== 'libre');
+            const totalCarta = completedCarta.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+
+            // Pedidos A La Carta En Cocina
+            const totalCartaActivos = displayActiveCarta.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+
+            // Gran Total General
+            const granTotalRecaudado = totalLibresCerradas + totalCarta;
+            const granTotalConActivos = granTotalRecaudado + totalLibresActivas + totalCartaActivos;
+
+            // Desglose de Empanadas
+            const empanadasVendidas = completedCarta.reduce((sum, o) => sum + (Number(o.empanadas) || 0), 0);
+            const totalEmpanadasMonto = empanadasVendidas * (Number(prices.empanada) || 0);
+
+            // Desglose de Bebidas
+            const bebidasStats = {};
+            let totalBebidasUnidades = 0;
+            let totalBebidasMonto = 0;
+
+            completedCarta.forEach(o => {
+                if (o.drinks && Array.isArray(o.drinks)) {
+                    o.drinks.forEach(d => {
+                        const q = Number(d.qty) || 1;
+                        const p = Number(d.price) || (Number(prices.drinks?.[d.name]) || 0);
+                        if (!bebidasStats[d.name]) {
+                            bebidasStats[d.name] = { qty: 0, total: 0, unitPrice: p };
+                        }
+                        bebidasStats[d.name].qty += q;
+                        bebidasStats[d.name].total += (q * p);
+                        totalBebidasUnidades += q;
+                        totalBebidasMonto += (q * p);
                     });
-                };
-                init();
-                return () => unsubscribe();
-            }, []);
+                }
+            });
 
-            const saveOrders = useCallback((d) => { setOrders(d); storage.set('orders', d); }, []);
-            const saveLibres = useCallback((d) => { setActiveLibres(d); storage.set('libres', d); }, []);
-            const savePrices = useCallback((d) => { setPrices(d); storage.set('prices', d); }, []);
-            const saveHistory = useCallback((d) => { setHistory(d); storage.set('history', d); }, []);
+            // Desglose de Pizzas por Gusto
+            const pizzaFlavorsStats = {};
+            let totalPizzasEnteras = 0;
+            let totalPizzasMedias = 0;
 
-            const showConfirm = useCallback((message, onConfirm) => {
-                setDialog({ type: 'confirm', message, onConfirm });
-            }, []);
-            const showAlert = useCallback((message) => {
-                setDialog({ type: 'alert', message });
-            }, []);
+            completedCarta.forEach(o => {
+                if (o.pizzas && Array.isArray(o.pizzas)) {
+                    o.pizzas.forEach(p => {
+                        const q = Number(p.qty) || 1;
+                        if (p.type === 'mitad') {
+                            totalPizzasMedias += q;
+                        } else {
+                            totalPizzasEnteras += q;
+                        }
 
-            const renderView = () => {
-                switch (view) {
-                    case 'reception': return <ReceptionView setView={setView} orders={orders} setOrders={saveOrders} activeLibres={activeLibres} setActiveLibres={saveLibres} prices={prices} setPrices={savePrices} history={history} setHistory={saveHistory} showConfirm={showConfirm} showAlert={showAlert} />;
-                    case 'kitchen': return <KitchenView setView={setView} orders={orders} setOrders={saveOrders} history={history} setHistory={saveHistory} showConfirm={showConfirm} showAlert={showAlert} prices={prices} />;
-                    default: return <Landing setView={setView} showConfirm={showConfirm} />;
+                        if (p.flavors && Array.isArray(p.flavors) && p.flavors.length > 0) {
+                            p.flavors.forEach(f => {
+                                pizzaFlavorsStats[f] = (pizzaFlavorsStats[f] || 0) + (q / p.flavors.length);
+                            });
+                        } else {
+                            pizzaFlavorsStats[p.description] = (pizzaFlavorsStats[p.description] || 0) + q;
+                        }
+                    });
+                }
+            });
+
+            const displayDateFormatted = useMemo(() => {
+                if (selectedDate === 'all') return 'Todas las fechas registradas';
+                const parts = selectedDate.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return selectedDate;
+            }, [selectedDate]);
+
+            // Guardar directamente como archivo PDF
+            const handleSavePDF = async () => {
+                setIsSaving(true);
+                setSaveStatus(null);
+                const filenameDate = selectedDate === 'all' ? 'Historico_Completo' : selectedDate;
+                const defaultFilename = `Reporte_Ganancias_${filenameDate}.pdf`;
+
+                try {
+                    const res = await storage.savePDF({ defaultFilename });
+                    if (res && res.success) {
+                        setSaveStatus({ success: true, msg: `PDF guardado exitosamente en: ${res.filePath}` });
+                    } else if (res && res.canceled) {
+                        setSaveStatus(null);
+                    } else if (res && res.error) {
+                        setSaveStatus({ success: false, msg: `Error: ${res.error}` });
+                    }
+                } catch (err) {
+                    console.error("Error al exportar PDF:", err);
+                    setSaveStatus({ success: false, msg: `Error al generar PDF: ${err.message || err}` });
+                } finally {
+                    setIsSaving(false);
                 }
             };
 
             return (
-                <div className="min-h-screen font-sans text-gray-900 bg-gray-900 relative">
-                    {renderView()}
-                    {dialog && (
-                        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center">
-                                {dialog.type === 'alert' ? <AlertTriangle size={48} className="text-yellow-500 mb-4" /> : <HelpCircle size={48} className="text-blue-500 mb-4" />}
-                                <h3 className="text-xl font-bold mb-6 text-gray-800 whitespace-pre-wrap">{dialog.message}</h3>
-                                <div className="flex gap-4 w-full">
-                                    {dialog.type === 'confirm' && (
-                                        <button onClick={() => setDialog(null)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-bold">CANCELAR</button>
-                                    )}
-                                    <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className={`flex-1 text-white py-3 rounded-lg font-bold ${dialog.type === 'alert' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                                        {dialog.type === 'alert' ? 'ENTENDIDO' : 'CONFIRMAR'}
-                                    </button>
+                <div className="fixed inset-0 bg-black/85 z-[9990] flex flex-col items-center justify-start p-2 sm:p-4 overflow-y-auto">
+                    {/* BARRA SUPERIOR DE CONTROL */}
+                    <div className="sticky top-2 z-[9999] w-full max-w-[210mm] bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-white no-print">
+                        {/* SELECTOR DE FECHA */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5 uppercase tracking-wide">
+                                <Calendar size={16} className="text-yellow-400" /> Fecha:
+                            </span>
+                            <input
+                                type="date"
+                                value={selectedDate === 'all' ? '' : selectedDate}
+                                onChange={e => setSelectedDate(e.target.value || todayStr)}
+                                className="bg-slate-900 border border-slate-600 rounded-lg px-2.5 py-1 text-sm font-bold text-white focus:outline-none focus:border-yellow-400"
+                            />
+                            <button
+                                onClick={() => setSelectedDate(todayStr)}
+                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate === todayStr ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
+                            >
+                                Hoy
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const y = new Date();
+                                    y.setDate(y.getDate() - 1);
+                                    setSelectedDate(getLocalDateString(y));
+                                }}
+                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate !== todayStr && selectedDate !== 'all' ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
+                            >
+                                Ayer
+                            </button>
+                            <button
+                                onClick={() => setSelectedDate('all')}
+                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate === 'all' ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
+                            >
+                                Todas
+                            </button>
+                        </div>
+
+                        {/* BOTONES */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleSavePDF}
+                                disabled={isSaving}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-sm shadow-xl flex items-center gap-2 border border-emerald-400/50 hover:scale-105 transition disabled:opacity-50"
+                            >
+                                <Download size={16} /> {isSaving ? 'GENERANDO PDF...' : 'GUARDAR COMO PDF'}
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-1 border border-slate-500 transition"
+                            >
+                                <X size={16} /> Cerrar
+                            </button>
+                        </div>
+
+                        {saveStatus && (
+                            <div className={`w-full p-2 rounded text-xs font-bold flex items-center gap-2 ${saveStatus.success ? 'bg-emerald-950 text-emerald-300 border border-emerald-500' : 'bg-red-950 text-red-300 border border-red-500'}`}>
+                                {saveStatus.success ? <Check size={16} /> : <AlertTriangle size={16} />}
+                                <span>{saveStatus.msg}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* HOJA DE REPORTE A4 VERTICAL */}
+                    <div
+                        id="report-print-container"
+                        className="bg-white text-gray-900 w-full max-w-[210mm] min-h-[297mm] p-6 sm:p-8 md:p-10 shadow-2xl my-auto rounded-lg print:rounded-none print:shadow-none print:p-0 print:m-0 print:max-w-none text-xs sm:text-sm font-sans"
+                    >
+                        {/* 1. ENCABEZADO */}
+                        <div className="border-b-2 border-slate-900 pb-4 mb-5 flex justify-between items-start">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="bg-slate-900 text-yellow-400 p-1.5 rounded font-black text-base flex items-center gap-1">
+                                        <Pizza size={20} /> CLUB DE BOCHAS
+                                    </div>
+                                    <span className="text-xl font-black tracking-tight text-slate-900">SISTEMA RIVERA</span>
+                                </div>
+                                <h1 className="text-lg font-black text-slate-800 uppercase tracking-wide">
+                                    Informe de Ventas y Balance de Ganancias
+                                </h1>
+                                <p className="text-[11px] text-gray-500">
+                                    Control de Caja Oficial • Período: <strong className="text-slate-800">{displayDateFormatted}</strong>
+                                </p>
+                            </div>
+                            <div className="text-right border-l border-gray-300 pl-4 py-1">
+                                <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fecha del Reporte</div>
+                                <div className="font-bold text-slate-800 text-sm font-mono">{displayDateFormatted}</div>
+                                <div className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1 border border-emerald-200">
+                                    {selectedDate === todayStr ? 'Caja del Día' : 'Cierre Histórico'}
                                 </div>
                             </div>
                         </div>
-                    )}
+
+                        {/* 2. RESUMEN EJECUTIVO (KPI CARDS) */}
+                        <div className="report-section mb-6">
+                            <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <DollarSign size={14} className="text-emerald-600" /> Resumen Financiero Consolidado
+                            </h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                <div className="bg-emerald-50 border border-emerald-300 p-3 rounded-lg flex flex-col justify-between">
+                                    <div className="text-[10px] font-black text-emerald-800 uppercase">Total Recaudado (Cerrado)</div>
+                                    <div className="text-2xl font-black text-emerald-700 mt-1">${granTotalRecaudado.toLocaleString()}</div>
+                                    <div className="text-[9px] text-emerald-600 font-semibold">{completedCarta.length} pedidos + {closedLibres.length} mesas</div>
+                                </div>
+
+                                <div className="bg-purple-50 border border-purple-300 p-3 rounded-lg flex flex-col justify-between">
+                                    <div className="text-[10px] font-black text-purple-800 uppercase">Mesas Libres (Total)</div>
+                                    <div className="text-2xl font-black text-purple-700 mt-1">${granTotalLibres.toLocaleString()}</div>
+                                    <div className="text-[9px] text-purple-600 font-semibold">{granTotalPersonasLibres} personas ({closedLibres.length} cerradas{displayActiveLibres.length > 0 ? `, ${displayActiveLibres.length} activas` : ''})</div>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-300 p-3 rounded-lg flex flex-col justify-between">
+                                    <div className="text-[10px] font-black text-blue-800 uppercase">A La Carta (Total)</div>
+                                    <div className="text-2xl font-black text-blue-700 mt-1">${totalCarta.toLocaleString()}</div>
+                                    <div className="text-[9px] text-blue-600 font-semibold">{completedCarta.length} pedidos despachados</div>
+                                </div>
+
+                                <div className="bg-amber-50 border border-amber-300 p-3 rounded-lg flex flex-col justify-between">
+                                    <div className="text-[10px] font-black text-amber-800 uppercase">Gran Total Balance</div>
+                                    <div className="text-2xl font-black text-amber-800 mt-1">${granTotalConActivos.toLocaleString()}</div>
+                                    <div className="text-[9px] text-amber-700 font-semibold">{isViewingToday ? 'Incluye mesas activas' : 'Cierre final'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. PARÁMETROS DE TARIFAS */}
+                        <div className="report-section mb-6 border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                            <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <Settings size={14} className="text-slate-600" /> Parámetros y Tarifas Aplicadas
+                            </h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <div className="bg-white p-2 rounded border border-gray-200">
+                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Mesa Libre p/Pers:</span>
+                                    <span className="font-black text-purple-700 text-sm">${(prices.pizzaLibreH || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-white p-2 rounded border border-gray-200">
+                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Empanada Unit:</span>
+                                    <span className="font-black text-yellow-700 text-sm">${(prices.empanada || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-white p-2 rounded border border-gray-200">
+                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Caja de Pizza:</span>
+                                    <span className="font-black text-blue-700 text-sm">${(prices.box || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-white p-2 rounded border border-gray-200">
+                                    <span className="text-[10px] text-gray-500 font-bold block">Gustos Configurados:</span>
+                                    <span className="font-black text-slate-800 text-sm">{Object.keys(prices.flavors || {}).length} gustos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. DETALLE MESAS LIBRES */}
+                        <div className="report-section mb-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <h2 className="text-xs font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Users size={14} className="text-purple-700" /> Detalle de Mesas Libres (Por Persona)
+                                </h2>
+                                <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
+                                    Subtotal Libres: ${granTotalLibres.toLocaleString()}
+                                </span>
+                            </div>
+
+                            {closedLibres.length === 0 && displayActiveLibres.length === 0 ? (
+                                <div className="text-center py-4 bg-gray-50 border rounded text-gray-400 italic text-xs">
+                                    No se registraron mesas libres en la fecha seleccionada ({displayDateFormatted}).
+                                </div>
+                            ) : (
+                                <div className="border border-gray-300 rounded overflow-hidden">
+                                    <table className="w-full text-left border-collapse text-xs">
+                                        <thead>
+                                            <tr className="bg-purple-900 text-white font-bold text-[11px]">
+                                                <th className="p-2">#</th>
+                                                <th className="p-2">Mesa / Cliente</th>
+                                                <th className="p-2 text-center">Horario</th>
+                                                <th className="p-2 text-center">Comensales</th>
+                                                <th className="p-2 text-center">Rondas</th>
+                                                <th className="p-2 text-right">Precio p/Pers.</th>
+                                                <th className="p-2 text-right">Total ($)</th>
+                                                <th className="p-2 text-center">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {closedLibres.map((l, idx) => {
+                                                const p = Number(l.people) || 0;
+                                                const pr = Number(l.pricePerPerson) || Number(prices.pizzaLibreH) || 0;
+                                                const tot = Number(l.totalPrice) || (p * pr);
+                                                return (
+                                                    <tr key={`cl-${l.id || idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-purple-50/40"}>
+                                                        <td className="p-2 font-mono text-gray-500 font-bold">{idx + 1}</td>
+                                                        <td className="p-2 font-bold text-gray-900">{l.client} {l.obs && <span className="text-gray-500 font-normal italic text-[10px]">({l.obs})</span>}</td>
+                                                        <td className="p-2 text-center font-mono text-gray-600">{l.timestamp || '--'} {l.closedAt ? `a ${l.closedAt}` : ''}</td>
+                                                        <td className="p-2 text-center font-bold text-purple-900">{p} pers.</td>
+                                                        <td className="p-2 text-center font-bold">{l.round || 1}ª</td>
+                                                        <td className="p-2 text-right font-mono">${pr.toLocaleString()}</td>
+                                                        <td className="p-2 text-right font-black text-purple-700">${tot.toLocaleString()}</td>
+                                                        <td className="p-2 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-1.5 py-0.5 rounded">Cobrada</span></td>
+                                                    </tr>
+                                                );
+                                            })}
+
+                                            {displayActiveLibres.map((l, idx) => {
+                                                const p = Number(l.people) || 0;
+                                                const pr = Number(prices.pizzaLibreH) || 0;
+                                                const tot = p * pr;
+                                                return (
+                                                    <tr key={`al-${l.id || idx}`} className="bg-amber-50/60 border-t border-amber-200">
+                                                        <td className="p-2 font-mono text-amber-700 font-bold">{closedLibres.length + idx + 1}</td>
+                                                        <td className="p-2 font-bold text-amber-900">{l.client} <span className="text-amber-700 text-[10px] font-bold">(En curso)</span></td>
+                                                        <td className="p-2 text-center font-mono text-gray-600">{l.timestamp || '--'}</td>
+                                                        <td className="p-2 text-center font-bold text-amber-900">{p} pers.</td>
+                                                        <td className="p-2 text-center font-bold">{l.round || 1}ª</td>
+                                                        <td className="p-2 text-right font-mono">${pr.toLocaleString()}</td>
+                                                        <td className="p-2 text-right font-black text-amber-800">${tot.toLocaleString()}</td>
+                                                        <td className="p-2 text-center"><span className="bg-amber-200 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded">En Curso</span></td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-purple-100 font-black border-t-2 border-purple-300 text-purple-950">
+                                                <td colSpan="3" className="p-2 uppercase">Total Mesas Libres:</td>
+                                                <td className="p-2 text-center">{granTotalPersonasLibres} pers.</td>
+                                                <td colSpan="2" className="p-2"></td>
+                                                <td className="p-2 text-right text-sm text-purple-900">${granTotalLibres.toLocaleString()}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 5. DETALLE PEDIDOS A LA CARTA */}
+                        <div className="report-section mb-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Utensils size={14} className="text-blue-700" /> Detalle de Pedidos A La Carta
+                                </h2>
+                                <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                                    Subtotal Carta: ${totalCarta.toLocaleString()}
+                                </span>
+                            </div>
+
+                            {completedCarta.length === 0 ? (
+                                <div className="text-center py-4 bg-gray-50 border rounded text-gray-400 italic text-xs">
+                                    No hay pedidos a la carta registrados en la fecha seleccionada ({displayDateFormatted}).
+                                </div>
+                            ) : (
+                                <div className="border border-gray-300 rounded overflow-hidden">
+                                    <table className="w-full text-left border-collapse text-xs">
+                                        <thead>
+                                            <tr className="bg-slate-800 text-white font-bold text-[11px]">
+                                                <th className="p-2">#</th>
+                                                <th className="p-2 text-center">Hora</th>
+                                                <th className="p-2">Cliente / Pedido</th>
+                                                <th className="p-2">Detalle Pizzas</th>
+                                                <th className="p-2 text-center">Empanadas</th>
+                                                <th className="p-2">Bebidas</th>
+                                                <th className="p-2 text-right">Total ($)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {completedCarta.map((o, idx) => (
+                                                <tr key={`cc-${o.id || idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                                    <td className="p-2 font-mono text-gray-500 font-bold">{idx + 1}</td>
+                                                    <td className="p-2 text-center font-mono text-gray-600 whitespace-nowrap">{o.timestamp || '--'}</td>
+                                                    <td className="p-2 font-bold text-gray-900">{o.client}</td>
+                                                    <td className="p-2">
+                                                        {o.pizzas && o.pizzas.length > 0 ? (
+                                                            <div className="space-y-0.5">
+                                                                {o.pizzas.map((p, i) => (
+                                                                    <div key={i} className="leading-tight text-[11px]">
+                                                                        <span className="font-bold text-gray-800">{p.qty}x</span> {p.description} {p.withBox && <span className="text-blue-600 font-bold text-[10px]">📦</span>}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic text-[11px]">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-2 text-center font-bold text-yellow-800">
+                                                        {o.empanadas > 0 ? `${o.empanadas} u.` : '-'}
+                                                    </td>
+                                                    <td className="p-2">
+                                                        {o.drinks && o.drinks.length > 0 ? (
+                                                            <div className="space-y-0.5">
+                                                                {o.drinks.map((d, i) => (
+                                                                    <div key={i} className="leading-tight text-blue-800 text-[11px]">
+                                                                        <span className="font-bold">{d.qty}x</span> {d.name}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic text-[11px]">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-2 text-right font-black text-emerald-700 text-sm">
+                                                        ${(o.totalPrice || 0).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-slate-100 font-black border-t-2 border-slate-300 text-slate-900">
+                                                <td colSpan="3" className="p-2 uppercase">Total Pedidos Carta:</td>
+                                                <td className="p-2 text-[11px] font-bold">{totalPizzasEnteras} enteras, {totalPizzasMedias} medias</td>
+                                                <td className="p-2 text-center text-yellow-900">{empanadasVendidas > 0 ? `${empanadasVendidas} u.` : '-'}</td>
+                                                <td className="p-2 text-[11px] text-blue-900">{totalBebidasUnidades > 0 ? `${totalBebidasUnidades} u.` : '-'}</td>
+                                                <td className="p-2 text-right text-sm text-emerald-800">${totalCarta.toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 6. ESTADÍSTICAS POR PRODUCTO */}
+                        <div className="report-section mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="border border-blue-200 rounded p-3 bg-blue-50/30">
+                                <h3 className="text-xs font-black text-blue-900 uppercase tracking-wide mb-2 flex items-center justify-between">
+                                    <span>🥤 Bebidas Vendidas</span>
+                                    <span className="text-[11px] font-bold text-blue-700">${totalBebidasMonto.toLocaleString()}</span>
+                                </h3>
+                                {Object.keys(bebidasStats).length === 0 ? (
+                                    <div className="text-gray-400 italic text-[11px]">Sin ventas de bebidas registradas.</div>
+                                ) : (
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-blue-200 text-gray-500 text-[10px]">
+                                                <th className="pb-1">Bebida</th>
+                                                <th className="pb-1 text-center">Cant.</th>
+                                                <th className="pb-1 text-right">P. Unit</th>
+                                                <th className="pb-1 text-right">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(bebidasStats).map(([name, stat]) => (
+                                                <tr key={name} className="border-b border-blue-100 last:border-0">
+                                                    <td className="py-1 font-bold text-gray-800">{name}</td>
+                                                    <td className="py-1 text-center font-bold text-blue-900">{stat.qty}</td>
+                                                    <td className="py-1 text-right font-mono">${stat.unitPrice.toLocaleString()}</td>
+                                                    <td className="py-1 text-right font-black text-blue-900">${stat.total.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+
+                            <div className="border border-orange-200 rounded p-3 bg-orange-50/30">
+                                <h3 className="text-xs font-black text-orange-900 uppercase tracking-wide mb-2 flex items-center justify-between">
+                                    <span>🍕 Gustos de Pizza Pedidos</span>
+                                    <span className="text-[11px] font-bold text-orange-700">{totalPizzasEnteras + totalPizzasMedias} pizzas</span>
+                                </h3>
+                                {Object.keys(pizzaFlavorsStats).length === 0 ? (
+                                    <div className="text-gray-400 italic text-[11px]">Sin pizzas a la carta registradas.</div>
+                                ) : (
+                                    <div className="space-y-1 text-xs">
+                                        {Object.entries(pizzaFlavorsStats)
+                                            .sort((a, b) => b[1] - a[1])
+                                            .map(([flavor, count]) => (
+                                                <div key={flavor} className="flex justify-between items-center py-0.5 border-b border-orange-100 last:border-0">
+                                                    <span className="font-semibold text-gray-800">{flavor}</span>
+                                                    <span className="font-bold text-orange-900 font-mono">{count}x</span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 7. FIRMA Y CIERRE */}
+                        <div className="report-section pt-6 mt-6 border-t-2 border-slate-800 flex justify-between items-end text-xs">
+                            <div>
+                                <div className="font-bold text-gray-800">Sistema Rivera - Control de Caja</div>
+                                <div className="text-[10px] text-gray-500">Reporte emitido conforme por el sistema de recepción</div>
+                            </div>
+                            <div className="text-center w-48 border-t border-gray-400 pt-1">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Firma Responsable / Turno</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
-        }
+        };
 
-        const Landing = ({ setView, showConfirm }) => {
+        // --- PANTALLA DE INICIO (LANDING) ---
+        const Landing = ({ setView, showConfirm, onOpenReport, history, activeLibres, orders, prices }) => {
             const [cleared, setCleared] = useState(false);
 
             const handleClear = async () => {
@@ -245,24 +698,42 @@
                 });
             };
 
+            const totalRecaudadoHoy = useMemo(() => {
+                const todayStr = getLocalDateString(new Date());
+                const totalCarta = history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (Number(o.totalPrice) || 0), 0);
+                const totalLibres = history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (Number(o.totalPrice) || ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
+                return totalCarta + totalLibres;
+            }, [history, prices.pizzaLibreH]);
+
             return (
                 <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-8 select-none relative">
                     <img src="./FOTO.PNG" alt="Logo" className="w-48 h-auto mb-6 rounded-2xl shadow-2xl" onError={(e) => e.target.style.display = 'none'} />
-                    <h1 className="text-5xl font-black mb-4 text-yellow-400 flex items-center gap-4"><Pizza /> Sistema Rivera </h1>
-                    <div className="flex gap-12 mt-8">
-                        <button onClick={() => setView('reception')} className="bg-white text-slate-800 w-64 h-64 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-4">
-                            <User size={60} className="text-blue-600" /><span className="text-2xl font-bold">RECEPCIÓN</span>
+                    <h1 className="text-5xl font-black mb-2 text-yellow-400 flex items-center gap-4"><Pizza /> Sistema Rivera </h1>
+                    <p className="text-gray-400 mb-6 font-medium text-sm">Gestión de Pedidos, Mesas Libres y Guardado de Informes PDF</p>
+
+                    <div className="flex gap-8 mt-2">
+                        <button onClick={() => setView('reception')} className="bg-white text-slate-800 w-56 h-56 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-3 border-4 border-transparent hover:border-blue-500">
+                            <User size={54} className="text-blue-600" /><span className="text-xl font-bold">RECEPCIÓN</span>
                         </button>
-                        <button onClick={() => setView('kitchen')} className="bg-slate-800 text-white w-64 h-64 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-4 border border-slate-700">
-                            <ChefHat size={60} className="text-red-500" /><span className="text-2xl font-bold">COCINA</span>
+                        <button onClick={() => setView('kitchen')} className="bg-slate-800 text-white w-56 h-56 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-3 border border-slate-700 hover:border-red-500">
+                            <ChefHat size={54} className="text-red-500" /><span className="text-xl font-bold">COCINA</span>
                         </button>
                     </div>
 
-                    {storage.openNewWindow && (
-                        <button onClick={() => storage.openNewWindow()} className="mt-12 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition">
-                            <Monitor size={24} /> ABRIR OTRA PANTALLA
+                    <div className="mt-8 flex items-center gap-4">
+                        <button
+                            onClick={onOpenReport}
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-xl transition hover:scale-105 border border-emerald-400/50"
+                        >
+                            <FileText size={20} /> INFORME DE CAJA EN PDF (${totalRecaudadoHoy.toLocaleString()})
                         </button>
-                    )}
+
+                        {storage.openNewWindow && (
+                            <button onClick={() => storage.openNewWindow()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-bold shadow-lg transition hover:scale-105">
+                                <Monitor size={20} /> ABRIR OTRA PANTALLA
+                            </button>
+                        )}
+                    </div>
 
                     <button onClick={handleClear} disabled={cleared} className={`absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow-lg transition ${cleared ? 'bg-green-600 text-white' : 'bg-red-600/80 hover:bg-red-600 text-white'}`}>
                         {cleared ? <Check size={24} /> : <Trash2 size={24} />}
@@ -272,9 +743,9 @@
             );
         };
 
-        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert }) => {
+        // --- PANTALLA DE RECEPCIÓN ---
+        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert, onOpenReport }) => {
             const [showPriceConfig, setShowPriceConfig] = useState(false);
-            const [configTab, setConfigTab] = useState('precios'); // 'precios' | 'ticket'
             const [localPrices, setLocalPrices] = useState(prices);
             const [newFlavorName, setNewFlavorName] = useState('');
             const [newDrinkName, setNewDrinkName] = useState('');
@@ -299,16 +770,59 @@
             const [pizzaTypeUI, setPizzaTypeUI] = useState('entera');
             const pizzaFlavors = Object.keys(prices.flavors || {});
 
+            const getFlavorMediaPrice = useCallback((flavor) => {
+                const p = prices.flavors?.[flavor];
+                if (!p) return 0;
+                const media = parseInt(p.media, 10);
+                if (!isNaN(media) && media > 0) return media;
+                const entera = parseInt(p.entera, 10) || 0;
+                return Math.round(entera / 2);
+            }, [prices.flavors]);
+
+            const getFlavorEnteraPrice = useCallback((flavor) => {
+                const p = prices.flavors?.[flavor];
+                if (!p) return 0;
+                const entera = parseInt(p.entera, 10);
+                if (!isNaN(entera) && entera > 0) return entera;
+                const media = parseInt(p.media, 10) || 0;
+                return media * 2;
+            }, [prices.flavors]);
+
+            const getPizzaPrice = useCallback((type, flavors) => {
+                if (!flavors || flavors.length === 0) return 0;
+
+                if (flavors.length === 1) {
+                    return type === 'mitad' ? getFlavorMediaPrice(flavors[0]) : getFlavorEnteraPrice(flavors[0]);
+                }
+
+                if (flavors.length === 2) {
+                    const m1 = getFlavorMediaPrice(flavors[0]);
+                    const m2 = getFlavorMediaPrice(flavors[1]);
+                    const sumMedias = m1 + m2;
+                    return type === 'mitad' ? Math.round(sumMedias / 2) : sumMedias;
+                }
+
+                if (flavors.length === 3) {
+                    const e1 = getFlavorEnteraPrice(flavors[0]);
+                    const e2 = getFlavorEnteraPrice(flavors[1]);
+                    const e3 = getFlavorEnteraPrice(flavors[2]);
+                    const avgEntera = Math.round((e1 + e2 + e3) / 3);
+                    return type === 'mitad' ? Math.round(avgEntera / 2) : avgEntera;
+                }
+
+                return 0;
+            }, [getFlavorMediaPrice, getFlavorEnteraPrice]);
+
             const calculatedTotal = useMemo(() => {
                 if (isLibre) {
-                    const people = parseInt(peopleQtyInput) || 0;
-                    const librePrice = parseInt(prices.pizzaLibreH) || 0;
+                    const people = parseInt(peopleQtyInput, 10) || 0;
+                    const librePrice = parseInt(prices.pizzaLibreH, 10) || 0;
                     return people * librePrice;
                 }
-                const pizzasSum = currentPizzas.reduce((sum, p) => sum + (parseInt(p.price) || 0) * (parseInt(p.qty) || 1), 0);
-                const drinksSum = currentDrinks.reduce((sum, d) => sum + (parseInt(d.price) || 0) * (parseInt(d.qty) || 1), 0);
-                const empQty = parseInt(empQtyInput) || 0;
-                const empSum = empQty * (parseInt(prices.empanada) || 0);
+                const pizzasSum = currentPizzas.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1), 0);
+                const drinksSum = currentDrinks.reduce((sum, d) => sum + (Number(d.price) || 0) * (Number(d.qty) || 1), 0);
+                const empQty = parseInt(empQtyInput, 10) || 0;
+                const empSum = empQty * (Number(prices.empanada) || 0);
                 return pizzasSum + drinksSum + empSum;
             }, [isLibre, peopleQtyInput, prices.pizzaLibreH, prices.empanada, currentPizzas, currentDrinks, empQtyInput]);
 
@@ -325,35 +839,12 @@
                 }
             };
 
-            const getPizzaPrice = (type, uniqueFlavors) => {
-                if (uniqueFlavors.length === 0) return 0;
-                if (uniqueFlavors.length === 1) {
-                    const p = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
-                    return type === 'mitad' ? parseInt(p.media) || 0 : parseInt(p.entera) || 0;
-                }
-                if (uniqueFlavors.length === 2) {
-                    const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
-                    const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
-                    const sumMedias = (parseInt(p1.media) || 0) + (parseInt(p2.media) || 0);
-                    return type === 'mitad' ? sumMedias / 2 : sumMedias;
-                }
-                if (uniqueFlavors.length === 3) {
-                    const p1 = prices.flavors[uniqueFlavors[0]] || { entera: 0, media: 0 };
-                    const p2 = prices.flavors[uniqueFlavors[1]] || { entera: 0, media: 0 };
-                    const p3 = prices.flavors[uniqueFlavors[2]] || { entera: 0, media: 0 };
-                    const sumMedias3 = (parseInt(p1.media) || 0) + (parseInt(p2.media) || 0) + (parseInt(p3.media) || 0);
-                    return type === 'mitad' ? Math.round(sumMedias3 / 4) : Math.round(sumMedias3 / 2);
-                }
-                return 0;
-            };
-
             const addPizza = () => {
                 if (selectedFlavors.length === 0) return showAlert("Seleccioná al menos un gusto");
 
-                const qty = parseInt(pizzaQtyRef.current?.value) || 1;
+                const qty = parseInt(pizzaQtyRef.current?.value, 10) || 1;
                 const obs = obsRef.current?.value || "";
-
-                const type = pizzaTypeUI; // 'entera' | 'mitad'
+                const type = pizzaTypeUI;
 
                 let flavorText = "";
                 if (selectedFlavors.length === 1) {
@@ -367,10 +858,24 @@
                 let desc = type === 'mitad' ? `Media ${flavorText}` : flavorText;
 
                 const unitPrice = getPizzaPrice(type, selectedFlavors);
-                const boxPrice = withBox ? (parseInt(prices.box) || 0) : 0;
+                const boxPrice = withBox ? (parseInt(prices.box, 10) || 0) : 0;
                 const totalUnitPrice = unitPrice + boxPrice;
 
-                setCurrentPizzas([...currentPizzas, { id: Date.now(), description: desc, qty, type, price: totalUnitPrice, obs, withBox }]);
+                setCurrentPizzas([
+                    ...currentPizzas,
+                    {
+                        id: Date.now(),
+                        description: desc,
+                        qty,
+                        type,
+                        flavors: [...selectedFlavors],
+                        price: totalUnitPrice,
+                        unitPrice,
+                        boxPrice,
+                        obs,
+                        withBox
+                    }
+                ]);
 
                 setSelectedFlavors([]);
                 if (obsRef.current) obsRef.current.value = "";
@@ -380,7 +885,7 @@
             };
 
             const addDrinkQuick = (drinkName) => {
-                const price = parseInt(prices.drinks[drinkName]) || 0;
+                const price = parseInt(prices.drinks[drinkName], 10) || 0;
                 const existingIndex = currentDrinks.findIndex(d => d.name === drinkName);
                 if (existingIndex !== -1) {
                     const updated = [...currentDrinks];
@@ -391,46 +896,74 @@
                 }
             };
 
-            const addDrink = () => {
-                const drinkName = drinkSelectRef.current?.value;
-                const qty = parseInt(drinkQtyRef.current?.value) || 1;
-                if (!drinkName) return showAlert("Falta elegir bebida");
-                const price = parseInt(prices.drinks[drinkName]) || 0;
-                const existingIndex = currentDrinks.findIndex(d => d.name === drinkName);
-                if (existingIndex !== -1) {
-                    const updated = [...currentDrinks];
-                    updated[existingIndex].qty += qty;
-                    setCurrentDrinks(updated);
-                } else {
-                    setCurrentDrinks([...currentDrinks, { id: Date.now(), name: drinkName, qty, price }]);
-                }
-                if (drinkSelectRef.current) drinkSelectRef.current.value = "";
-                if (drinkQtyRef.current) drinkQtyRef.current.value = 1;
-            };
-
             const submitOrder = () => {
                 const client = clientNameRef.current.value.trim();
                 if (!client) return showAlert("Falta nombre");
 
                 const newId = Date.now();
-                if (isLibre) {
-                    const people = peopleQtyRef.current.value;
-                    const obs = libreObsRef.current.value;
-                    if (!people) return showAlert("Falta cantidad personas");
+                const currentDateStr = getLocalDateString(new Date());
 
-                    const newLibre = { id: newId, client, people, round: 1, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), obs };
+                if (isLibre) {
+                    const people = parseInt(peopleQtyRef.current.value, 10) || 0;
+                    const obs = libreObsRef.current.value;
+                    if (!people || people <= 0) return showAlert("Falta cantidad de personas");
+
+                    const pricePerPerson = parseInt(prices.pizzaLibreH, 10) || 0;
+                    const tableTotal = people * pricePerPerson;
+
+                    const newLibre = {
+                        id: newId,
+                        client,
+                        people,
+                        pricePerPerson,
+                        totalPrice: tableTotal,
+                        round: 1,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        date: currentDateStr,
+                        obs
+                    };
+
                     setActiveLibres([...activeLibres, newLibre]);
-                    setOrders([...orders, { ...newLibre, type: 'libre', pizzas: [], drinks: [], empanadas: 0, totalPrice: 0, id: newId + '_1', libreId: newId }]);
+
+                    setOrders([...orders, {
+                        id: newId + '_1',
+                        libreId: newId,
+                        client,
+                        type: 'libre',
+                        people,
+                        round: 1,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        date: currentDateStr,
+                        obs,
+                        pizzas: [],
+                        drinks: [],
+                        empanadas: 0,
+                        totalPrice: 0
+                    }]);
 
                     peopleQtyRef.current.value = "";
                     libreObsRef.current.value = "";
                     setPeopleQtyInput('');
                 } else {
-                    const empQty = parseInt(empanadasRef.current.value) || 0;
+                    const empQty = parseInt(empanadasRef.current.value, 10) || 0;
                     if (currentPizzas.length === 0 && empQty === 0 && currentDrinks.length === 0) return showAlert("Pedido vacío");
 
-                    let total = currentPizzas.reduce((sum, p) => sum + (p.price * p.qty), 0) + (empQty * (prices.empanada || 0)) + currentDrinks.reduce((sum, d) => sum + (d.price * d.qty), 0);
-                    setOrders([...orders, { id: newId, client, pizzas: currentPizzas, drinks: currentDrinks, empanadas: empQty, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), type: 'normal', totalPrice: total }]);
+                    const pizzasTotal = currentPizzas.reduce((sum, p) => sum + (Number(p.price) * Number(p.qty)), 0);
+                    const drinksTotal = currentDrinks.reduce((sum, d) => sum + (Number(d.price) * Number(d.qty)), 0);
+                    const empTotal = empQty * (parseInt(prices.empanada, 10) || 0);
+                    const total = pizzasTotal + drinksTotal + empTotal;
+
+                    setOrders([...orders, {
+                        id: newId,
+                        client,
+                        pizzas: currentPizzas,
+                        drinks: currentDrinks,
+                        empanadas: empQty,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        date: currentDateStr,
+                        type: 'normal',
+                        totalPrice: total
+                    }]);
 
                     setCurrentPizzas([]);
                     setCurrentDrinks([]);
@@ -441,20 +974,54 @@
                 clientNameRef.current.focus();
             };
 
-            // Callbacks estables para las listas memorizadas
             const handleRound = useCallback((l) => {
                 const nr = l.round + 1;
                 const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr } : x);
                 setActiveLibres(updated);
-                setOrders([...orders, { id: Date.now(), client: l.client, pizzas: [], drinks: [], empanadas: 0, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), type: 'libre', people: l.people, round: nr, totalPrice: 0, obs: l.obs, libreId: l.id }]);
+                setOrders([...orders, {
+                    id: Date.now(),
+                    libreId: l.id,
+                    client: l.client,
+                    pizzas: [],
+                    drinks: [],
+                    empanadas: 0,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    date: getLocalDateString(new Date()),
+                    type: 'libre',
+                    people: l.people,
+                    round: nr,
+                    totalPrice: 0,
+                    obs: l.obs
+                }]);
             }, [activeLibres, orders, setActiveLibres, setOrders]);
 
             const handleCloseLibre = useCallback((l) => {
-                showConfirm("¿Cerrar Mesa?", () => {
+                const people = parseInt(l.people, 10) || 0;
+                const pricePerPerson = parseInt(prices.pizzaLibreH, 10) || 0;
+                const totalTable = people * pricePerPerson;
+                const currentDateStr = getLocalDateString(new Date());
+
+                showConfirm(`¿Cerrar Mesa Libre de ${l.client} (${people} personas - Total: $${totalTable.toLocaleString()})?\nEsto la sumará al reporte y balance de ganancias.`, () => {
+                    const closedEntry = {
+                        id: l.id,
+                        client: l.client,
+                        type: 'libre',
+                        people,
+                        pricePerPerson,
+                        totalPrice: totalTable,
+                        round: l.round,
+                        timestamp: l.timestamp,
+                        date: l.date || currentDateStr,
+                        closedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        completedAt: new Date().toISOString(),
+                        obs: l.obs || ''
+                    };
+
+                    setHistory([...history, closedEntry]);
                     setActiveLibres(activeLibres.filter(x => x.id !== l.id));
                     setOrders(orders.filter(x => x.libreId !== l.id));
                 });
-            }, [activeLibres, orders, setActiveLibres, setOrders, showConfirm]);
+            }, [activeLibres, orders, history, prices.pizzaLibreH, setActiveLibres, setOrders, setHistory, showConfirm]);
 
             const handleDeleteOrder = useCallback((o) => {
                 showConfirm('¿Eliminar sin sumar al total?', () => {
@@ -464,12 +1031,11 @@
 
             const handleCompleteOrder = useCallback((o) => {
                 if (o.type === 'libre') {
-                    setHistory([...history, { ...o, completedAt: new Date().toISOString() }]);
                     setOrders(orders.filter(x => x.id !== o.id));
                     return;
                 }
-                showConfirm('¿Marcar como completado? Esto lo sumará al total registrado.', () => {
-                    setHistory([...history, { ...o, completedAt: new Date().toISOString() }]);
+                showConfirm(`¿Marcar como completado? Esto sumará $${(o.totalPrice || 0).toLocaleString()} al total registrado.`, () => {
+                    setHistory([...history, { ...o, date: o.date || getLocalDateString(new Date()), completedAt: new Date().toISOString() }]);
                     setOrders(orders.filter(x => x.id !== o.id));
                 });
             }, [history, orders, setHistory, setOrders, showConfirm]);
@@ -486,30 +1052,26 @@
                                 </div>
 
                                 <div className="p-4 overflow-y-auto flex-1 space-y-4">
-                                    {/* CAJA */}
                                     <div className="bg-blue-50 p-3 rounded border border-blue-200">
                                         <label className="font-bold text-blue-800 block mb-1 flex items-center gap-2"><PackageIcon size={16} /> Precio de la Caja (por pizza)</label>
-                                        <input type="number" key={`box-${showPriceConfig}`} defaultValue={localPrices.box || 0} onChange={e => setLocalPrices({ ...localPrices, box: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-blue-300 rounded font-bold text-lg" />
+                                        <input type="number" key={`box-${showPriceConfig}`} defaultValue={localPrices.box || 0} onChange={e => setLocalPrices({ ...localPrices, box: parseInt(e.target.value, 10) || 0 })} className="w-full p-2 border border-blue-300 rounded font-bold text-lg" />
                                     </div>
-                                    {/* EMPANADAS */}
                                     <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
                                         <label className="font-bold text-yellow-800 block mb-1">Precio Empanada Unitaria</label>
-                                        <input type="number" key={`emp-${showPriceConfig}`} defaultValue={localPrices.empanada} onChange={e => setLocalPrices({ ...localPrices, empanada: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-yellow-300 rounded font-bold text-lg" />
+                                        <input type="number" key={`emp-${showPriceConfig}`} defaultValue={localPrices.empanada || 0} onChange={e => setLocalPrices({ ...localPrices, empanada: parseInt(e.target.value, 10) || 0 })} className="w-full p-2 border border-yellow-300 rounded font-bold text-lg" />
                                     </div>
-                                    {/* MESA LIBRE */}
                                     <div className="bg-purple-50 p-3 rounded border border-purple-200">
                                         <label className="font-bold text-purple-800 block mb-1 flex items-center gap-2"><Users size={16} /> Precio Mesa Libre (por persona)</label>
-                                        <input type="number" key={`libre-${showPriceConfig}`} defaultValue={localPrices.pizzaLibreH || 0} onChange={e => setLocalPrices({ ...localPrices, pizzaLibreH: parseInt(e.target.value) || 0 })} className="w-full p-2 border border-purple-300 rounded font-bold text-lg" />
+                                        <input type="number" key={`libre-${showPriceConfig}`} defaultValue={localPrices.pizzaLibreH || 0} onChange={e => setLocalPrices({ ...localPrices, pizzaLibreH: parseInt(e.target.value, 10) || 0 })} className="w-full p-2 border border-purple-300 rounded font-bold text-lg" />
                                     </div>
-                                    {/* PIZZAS */}
                                     <div>
                                         <h3 className="font-bold border-b pb-2 text-orange-800 flex items-center gap-2"><Pizza size={16} /> Pizzas (Entera / Media)</h3>
                                         <div className="space-y-2 mt-2">
                                             {Object.keys(localPrices.flavors || {}).map(f => (
                                                 <div key={f} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
                                                     <div className="flex-1 font-bold text-sm text-gray-700">{f}</div>
-                                                    <input type="number" placeholder="Entera" defaultValue={localPrices.flavors[f]?.entera} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], entera: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
-                                                    <input type="number" placeholder="Media" defaultValue={localPrices.flavors[f]?.media} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], media: parseInt(e.target.value) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <input type="number" placeholder="Entera" defaultValue={localPrices.flavors[f]?.entera} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], entera: parseInt(e.target.value, 10) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <input type="number" placeholder="Media" defaultValue={localPrices.flavors[f]?.media} onChange={e => setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [f]: { ...localPrices.flavors[f], media: parseInt(e.target.value, 10) || 0 } } })} className="w-24 p-1.5 border rounded text-center font-bold" />
                                                     <button onClick={() => { const { [f]: _, ...rest } = localPrices.flavors; setLocalPrices({ ...localPrices, flavors: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
                                                 </div>
                                             ))}
@@ -519,14 +1081,13 @@
                                             <button onClick={() => { if (newFlavorName.trim()) { setLocalPrices({ ...localPrices, flavors: { ...localPrices.flavors, [newFlavorName.trim()]: { entera: 0, media: 0 } } }); setNewFlavorName(''); } }} className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
                                         </div>
                                     </div>
-                                    {/* BEBIDAS */}
                                     <div>
                                         <h3 className="font-bold border-b pb-2 text-blue-800 flex items-center gap-2"><CupSoda size={16} /> Bebidas</h3>
                                         <div className="space-y-2 mt-2">
                                             {Object.entries(localPrices.drinks || {}).map(([name, price]) => (
                                                 <div key={name} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-200">
                                                     <div className="flex-1 font-bold text-sm text-gray-700">{name}</div>
-                                                    <input type="number" defaultValue={price} onChange={e => setLocalPrices({ ...localPrices, drinks: { ...localPrices.drinks, [name]: parseInt(e.target.value) || 0 } })} className="w-24 p-1.5 border rounded text-center font-bold" />
+                                                    <input type="number" defaultValue={price} onChange={e => setLocalPrices({ ...localPrices, drinks: { ...localPrices.drinks, [name]: parseInt(e.target.value, 10) || 0 } })} className="w-24 p-1.5 border rounded text-center font-bold" />
                                                     <button onClick={() => { const { [name]: _, ...rest } = localPrices.drinks; setLocalPrices({ ...localPrices, drinks: rest }); }} className="text-red-400 hover:text-red-600 ml-1"><Trash2 size={16} /></button>
                                                 </div>
                                             ))}
@@ -534,7 +1095,7 @@
                                         <div className="flex gap-2 mt-2">
                                             <input type="text" value={newDrinkName} onChange={e => setNewDrinkName(e.target.value)} placeholder="Nombre bebida..." className="flex-1 p-2 border rounded text-sm" />
                                             <input type="number" value={newDrinkPrice} onChange={e => setNewDrinkPrice(e.target.value)} placeholder="Precio" className="w-24 p-2 border rounded text-sm text-center" />
-                                            <button onClick={() => { if (newDrinkName.trim()) { setLocalPrices({ ...localPrices, drinks: { ...(localPrices.drinks || {}), [newDrinkName.trim()]: parseInt(newDrinkPrice) || 0 } }); setNewDrinkName(''); setNewDrinkPrice(''); } }} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
+                                            <button onClick={() => { if (newDrinkName.trim()) { setLocalPrices({ ...localPrices, drinks: { ...(localPrices.drinks || {}), [newDrinkName.trim()]: parseInt(newDrinkPrice, 10) || 0 } }); setNewDrinkName(''); setNewDrinkPrice(''); } }} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded font-bold text-sm">+ Agregar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -547,33 +1108,50 @@
                     )}
 
                     <div className="w-1/2 bg-gray-50 flex flex-col border-r border-gray-300 shadow-xl z-10 h-full">
-                        {/* HEADER */}
+                        {/* HEADER DE RECEPCIÓN */}
                         <div className="bg-gray-800 p-2 flex justify-between items-center text-white shrink-0 h-12">
-                            <div className="flex gap-2 items-center"><button onClick={() => setView('landing')} className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded font-bold">SALIR</button><span className="font-bold text-sm">RECEPCIÓN</span></div>
-                            <div className="flex gap-3 items-center">
-                                <button onClick={() => { setLocalPrices(prices); setShowPriceConfig(true); }} className="text-gray-300 hover:text-white" title="Configurar Precios"><Settings size={18} /></button>
-                                <div className="text-xs bg-gray-700 px-2 rounded">v3.0 Rápida</div>
+                            <div className="flex gap-2 items-center">
+                                <button onClick={() => setView('landing')} className="text-xs bg-gray-700 hover:bg-gray-600 px-2.5 py-1 rounded font-bold">SALIR</button>
+                                <span className="font-bold text-sm flex items-center gap-1.5"><User size={16} className="text-blue-400" /> RECEPCIÓN</span>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <button
+                                    onClick={onOpenReport}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded-md font-bold flex items-center gap-1 shadow transition"
+                                    title="Ver y Exportar Reporte de Caja en PDF"
+                                >
+                                    <FileText size={14} /> REPORTE PDF
+                                </button>
+                                <button onClick={() => { setLocalPrices(prices); setShowPriceConfig(true); }} className="text-gray-300 hover:text-white p-1 rounded hover:bg-gray-700" title="Configurar Precios">
+                                    <Settings size={18} />
+                                </button>
                             </div>
                         </div>
 
-                        {/* INPUT CLIENTE - USANDO REF (NO RE-RENDERIZA) */}
+                        {/* INPUT CLIENTE / MESA */}
                         <div className="bg-white p-3 border-b border-gray-200 shrink-0 shadow-sm z-20 space-y-3">
                             <div className="flex gap-2 items-start">
                                 <div className="flex-1 bg-white rounded shadow-sm border border-gray-200 p-2">
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase">Nombre Cliente / Mesa</label>
-                                    <input ref={clientNameRef} type="text" className="w-full text-xl font-bold text-gray-800 p-1 border-b-2 border-gray-300 outline-none bg-transparent" placeholder="Ej: Pepe" autoFocus />
+                                    <input ref={clientNameRef} type="text" className="w-full text-xl font-bold text-gray-800 p-1 border-b-2 border-gray-300 outline-none bg-transparent" placeholder="Ej: Mesa 4 / Juan" autoFocus />
                                 </div>
-                                <button onClick={() => setIsLibre(!isLibre)} className={`flex flex-col items-center justify-center px-4 py-2 rounded border h-full ${isLibre ? 'bg-purple-100 border-purple-500 text-purple-700' : 'bg-white border-gray-300 text-gray-500'}`}><span className="text-xs font-black">{isLibre ? 'MESA LIBRE' : 'A LA CARTA'}</span><Users size={20} /></button>
+                                <button onClick={() => setIsLibre(!isLibre)} className={`flex flex-col items-center justify-center px-4 py-2 rounded border h-full transition ${isLibre ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
+                                    <span className="text-xs font-black">{isLibre ? 'MESA LIBRE' : 'A LA CARTA'}</span>
+                                    <Users size={20} />
+                                </button>
                             </div>
+
                             {isLibre && (
                                 <div className="mt-2 space-y-3">
                                     <div className="flex gap-2">
-                                        <input ref={peopleQtyRef} type="number" placeholder="Cant. Personas" value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-36 p-2 border-2 border-purple-400 rounded text-center font-bold text-lg" />
-                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa..." className="flex-1 p-2 border-2 border-purple-400 rounded" />
+                                        <div className="relative">
+                                            <input ref={peopleQtyRef} type="number" placeholder="Cant. Personas" value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-36 p-2 border-2 border-purple-400 rounded text-center font-bold text-lg" />
+                                            <span className="text-[10px] font-bold text-purple-700 block text-center mt-0.5">(${prices.pizzaLibreH || 0} c/u)</span>
+                                        </div>
+                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa (mozo, ubicación, etc)..." className="flex-1 p-2 border-2 border-purple-400 rounded h-[46px]" />
                                     </div>
                                     
-                                    {/* LISTADO DE MESAS LIBRES POR LAS DUDAS AL INICIALIZAR */}
-                                    <div className="bg-slate-200 border-2 border-purple-300 rounded-lg p-2 flex flex-col h-[55vh]">
+                                    <div className="bg-slate-200 border-2 border-purple-300 rounded-lg p-2 flex flex-col h-[52vh]">
                                         <div className="bg-purple-200 text-purple-900 px-3 py-1.5 rounded text-xs font-black uppercase flex justify-between items-center mb-2">
                                             <span className="flex items-center gap-1.5"><Users size={15} /> Mesas Libres Activas</span>
                                             <span className="bg-purple-700 text-white px-2 py-0.5 rounded-full text-[11px]">{activeLibres.length}</span>
@@ -588,12 +1166,11 @@
                         {!isLibre && (
                             <div className="flex-1 flex flex-col min-h-0 bg-gray-100 relative">
                                 <div className="p-2.5 space-y-2.5 shrink-0 border-b border-gray-200 bg-gray-50 shadow-md z-10">
-                                    {/* BOTONERA INTELIGENTE DE GUSTOS */}
                                     <div className="bg-orange-50 p-2.5 rounded-lg border border-orange-200 shadow-sm space-y-2">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-bold text-orange-900 flex items-center gap-1.5 text-sm">
-                                                    <Pizza size={18} className="text-orange-600" /> Gustos de Pizza
+                                                    <Pizza size={18} className="text-orange-600" /> Gustos de Pizza (1, 2 o 3 gustos)
                                                 </h3>
                                                 {selectedFlavors.length > 0 && (
                                                     <button onClick={() => setSelectedFlavors([])} className="text-xs text-orange-600 hover:text-orange-800 underline font-semibold">
@@ -606,7 +1183,6 @@
                                                     <input type="checkbox" checked={withBox} onChange={e => setWithBox(e.target.checked)} className="w-3.5 h-3.5" />
                                                     <PackageIcon size={13} /> Caja (+${prices.box || 0})
                                                 </label>
-                                                {/* Selector Entera / Media SIEMPRE VISIBLE */}
                                                 <div className="flex bg-white rounded border border-gray-300 overflow-hidden text-xs shadow-sm">
                                                     <button onClick={() => setPizzaTypeUI('entera')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'entera' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Entera</button>
                                                     <button onClick={() => setPizzaTypeUI('mitad')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'mitad' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Media</button>
@@ -614,8 +1190,7 @@
                                             </div>
                                         </div>
 
-                                        {/* GRID TÁCTIL DE GUSTOS (TOTALMENTE VISIBLE) */}
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 p-1 bg-white/60 rounded border border-orange-100">
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 p-1 bg-white/60 rounded border border-orange-100 max-h-[140px] overflow-y-auto">
                                             {pizzaFlavors.map(f => {
                                                 const idx = selectedFlavors.indexOf(f);
                                                 const isSelected = idx !== -1;
@@ -641,14 +1216,15 @@
                                             })}
                                         </div>
 
-                                        {/* RESUMEN Y AGREGAR */}
                                         <div className="flex gap-2 items-center pt-1 border-t border-orange-200/60">
                                             <div className="flex-1 bg-white px-2.5 py-1.5 rounded border border-orange-200 text-xs truncate">
                                                 {selectedFlavors.length === 0 ? (
-                                                    <span className="text-gray-400 italic">👉 Tocá 1 o 2 gustos para armar la pizza</span>
+                                                    <span className="text-gray-400 italic">👉 Tocá 1, 2 o 3 gustos para armar la pizza</span>
                                                 ) : (
                                                     <span className="font-bold text-orange-900">
-                                                        🍕 {pizzaTypeUI === 'mitad' ? 'Media ' : ''}{selectedFlavors.length === 1 ? selectedFlavors[0] : selectedFlavors.join(' y ')}
+                                                        🍕 {pizzaTypeUI === 'mitad' ? 'Media ' : ''}
+                                                        {selectedFlavors.length === 1 ? selectedFlavors[0] : (selectedFlavors.length === 2 ? selectedFlavors.join(' y ') : `${selectedFlavors.slice(0, -1).join(', ')} y ${selectedFlavors[selectedFlavors.length - 1]}`)}
+                                                        <span className="text-green-700 ml-1">(${getPizzaPrice(pizzaTypeUI, selectedFlavors) + (withBox ? (parseInt(prices.box, 10) || 0) : 0)})</span>
                                                     </span>
                                                 )}
                                             </div>
@@ -666,14 +1242,12 @@
                                         </div>
                                     </div>
 
-                                    {/* EMPANADAS Y BEBIDAS RÁPIDAS */}
                                     <div className="flex gap-2 items-stretch">
                                         <div className="flex-[0.7] bg-yellow-50 p-2 rounded-lg border border-yellow-200 flex flex-col justify-center shadow-sm">
-                                            <div className="flex items-center justify-center gap-1 mb-1"><Utensils size={14} className="text-yellow-700" /><span className="font-bold text-yellow-800 text-xs text-center leading-tight">Empanadas<br/>(${prices.empanada})</span></div>
+                                            <div className="flex items-center justify-center gap-1 mb-1"><Utensils size={14} className="text-yellow-700" /><span className="font-bold text-yellow-800 text-xs text-center leading-tight">Empanadas<br/>(${prices.empanada || 0})</span></div>
                                             <input ref={empanadasRef} type="number" placeholder="0" value={empQtyInput} onChange={e => setEmpQtyInput(e.target.value)} className="w-full p-1.5 border border-yellow-300 rounded font-bold text-center text-lg" />
                                         </div>
 
-                                        {/* BOTONERA EXPRESS DE BEBIDAS */}
                                         <div className="flex-[1.3] bg-blue-50 p-2 rounded-lg border border-blue-200 shadow-sm flex flex-col justify-between">
                                             <div className="flex justify-between items-center mb-1">
                                                 <h3 className="font-bold text-blue-900 flex items-center gap-1 text-xs"><CupSoda size={14} className="text-blue-600" /> Bebidas Rápidas</h3>
@@ -682,7 +1256,7 @@
                                             {Object.keys(prices.drinks || {}).length === 0 ? (
                                                 <div className="text-xs text-gray-400 italic text-center py-2">Sin bebidas cargadas</div>
                                             ) : (
-                                                <div className="grid grid-cols-2 gap-1.5 p-0.5">
+                                                <div className="grid grid-cols-2 gap-1.5 p-0.5 max-h-[75px] overflow-y-auto">
                                                     {Object.entries(prices.drinks || {}).map(([dName, dPrice]) => (
                                                         <button
                                                             key={dName}
@@ -699,50 +1273,64 @@
                                         </div>
                                     </div>
                                 </div>
-                                {/* LISTA PIZZAS ACTUALES (Local, ligera) */}
+
                                 <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-gray-100">
                                     {currentPizzas.map((p) => (
                                         <div key={p.id} className="bg-white p-2 rounded border flex justify-between items-center shadow-sm text-sm">
-                                            <div><span className="font-bold text-gray-800 mr-1">{p.qty}x</span> {p.description} {p.withBox && <span className="text-blue-600 font-bold text-xs">📦</span>} {p.obs && <span className="text-xs text-orange-600 italic">({p.obs})</span>}</div>
-                                            <div className="flex items-center gap-2"><span className="text-xs font-bold bg-green-50 text-green-700 px-1 rounded border border-green-100">${(p.price * p.qty).toLocaleString()}</span><button onClick={() => setCurrentPizzas(currentPizzas.filter(x => x.id !== p.id))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button></div>
+                                            <div>
+                                                <span className="font-bold text-gray-800 mr-1">{p.qty}x</span> {p.description} 
+                                                {p.withBox && <span className="text-blue-600 font-bold text-xs ml-1">📦</span>} 
+                                                {p.obs && <span className="text-xs text-orange-600 italic ml-1">({p.obs})</span>}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200">
+                                                    ${((p.price || 0) * (p.qty || 1)).toLocaleString()}
+                                                </span>
+                                                <button onClick={() => setCurrentPizzas(currentPizzas.filter(x => x.id !== p.id))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                            </div>
                                         </div>
                                     ))}
                                     {currentDrinks.map((d) => (
                                         <div key={d.id} className="bg-white p-2 rounded border flex justify-between items-center shadow-sm text-sm">
                                             <div><span className="font-bold text-blue-800 mr-1">{d.qty}x</span> {d.name} <span className="text-xs text-blue-600 font-bold">🥤</span></div>
-                                            <div className="flex items-center gap-2"><span className="text-xs font-bold bg-green-50 text-green-700 px-1 rounded border border-green-100">${(d.price * d.qty).toLocaleString()}</span><button onClick={() => setCurrentDrinks(currentDrinks.filter(x => x.id !== d.id))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button></div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200">
+                                                    ${((d.price || 0) * (d.qty || 1)).toLocaleString()}
+                                                </span>
+                                                <button onClick={() => setCurrentDrinks(currentDrinks.filter(x => x.id !== d.id))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* BOTÓN ENVIAR Y TOTAL DESTACADO */}
+                        {/* TOTAL Y ENVIAR */}
                         <div className="p-3 bg-white border-t border-gray-200 shrink-0 z-20 shadow-lg flex flex-col gap-2">
                             <div className={`flex justify-between items-center px-4 py-2.5 rounded-xl border shadow-sm ${isLibre ? 'bg-purple-50 border-purple-200' : 'bg-emerald-50 border-emerald-200'}`}>
                                 <span className={`font-black text-sm uppercase tracking-wide flex items-center gap-1.5 ${isLibre ? 'text-purple-800' : 'text-emerald-800'}`}>
                                     <DollarSign size={18} className={isLibre ? 'text-purple-600' : 'text-emerald-600'} />
-                                    {isLibre ? 'Total Estimado Mesa:' : 'Total Pedido:'}
+                                    {isLibre ? 'Total Estimado Mesa Libre:' : 'Total Pedido:'}
                                 </span>
                                 <span className={`text-3xl font-black tracking-tight ${isLibre ? 'text-purple-700' : 'text-emerald-600'}`}>
                                     ${calculatedTotal.toLocaleString()}
                                 </span>
                             </div>
-                            <button onClick={submitOrder} className={`w-full py-3 rounded-lg font-bold text-xl text-white shadow transition ${isLibre ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{isLibre ? 'INICIAR MESA LIBRE' : 'ENVIAR PEDIDO'}</button>
+                            <button onClick={submitOrder} className={`w-full py-3 rounded-lg font-bold text-xl text-white shadow transition ${isLibre ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                                {isLibre ? 'INICIAR MESA LIBRE' : 'ENVIAR PEDIDO'}
+                            </button>
                         </div>
                     </div>
 
-                    {/* LISTA COCINA Y MESAS LIBRES (COLUMNA DERECHA) */}
+                    {/* COLUMNA DERECHA */}
                     <div className="w-1/2 bg-slate-100 flex flex-col h-full overflow-hidden border-l border-gray-300">
                         <div className="p-3 bg-slate-800 text-white shadow-md flex justify-between items-center shrink-0">
-                            <h2 className="font-bold flex items-center gap-2 text-sm"><Monitor size={18} /> Pedidos Cocina</h2>
+                            <h2 className="font-bold flex items-center gap-2 text-sm"><Monitor size={18} /> Pedidos en Cocina</h2>
                             <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-full font-bold">{orders.length}</span>
                         </div>
                         
-                        {/* GRID 2 COLUMNAS DE PEDIDOS DE COCINA */}
                         <KitchenOrdersList orders={orders} onComplete={handleCompleteOrder} onDelete={handleDeleteOrder} prices={prices} />
 
-                        {/* MESAS LIBRES ACTIVAS EN COLUMNA DERECHA (TAMAÑO MÁS GRANDE: 32vh) */}
                         <div className="bg-slate-200 border-t-4 border-slate-300 shrink-0 h-[32vh] flex flex-col shadow-inner">
                             <div className="bg-slate-300 px-3 py-2 text-xs font-bold text-slate-800 uppercase flex justify-between items-center border-b border-slate-400/50">
                                 <span className="flex items-center gap-1.5"><Users size={16} className="text-purple-600" /> Mesas Libres Activas</span>
@@ -755,62 +1343,164 @@
             );
         };
 
-        const KitchenView = ({ setView, orders, setOrders, history, setHistory, showConfirm, showAlert, prices }) => {
+        // --- PANTALLA DE COCINA ---
+        const KitchenView = ({ setView, orders, setOrders, history, setHistory, showConfirm, showAlert, prices, activeLibres, onOpenReport }) => {
             const [zoom, setZoom] = useState(1);
             const [showTotal, setShowTotal] = useState(false);
 
             const handleComplete = (o) => {
                 if (o.type === 'libre') {
-                    setHistory([...history, { ...o, completedAt: new Date().toISOString() }]);
                     setOrders(orders.filter(x => x.id !== o.id));
                     return;
                 }
-                showConfirm('¿Marcar como completado? Esto lo sumará al total.', () => {
-                    setHistory([...history, { ...o, completedAt: new Date().toISOString() }]);
+                showConfirm(`¿Marcar como completado? Esto sumará $${(o.totalPrice || 0).toLocaleString()} al total registrado.`, () => {
+                    setHistory([...history, { ...o, date: o.date || getLocalDateString(new Date()), completedAt: new Date().toISOString() }]);
                     setOrders(orders.filter(x => x.id !== o.id));
                 });
             };
 
+            const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+            const totalCartaHoy = useMemo(() => history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0), [history, todayStr]);
+            const totalLibresCerradasHoy = useMemo(() => history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (Number(o.totalPrice) || ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0), [history, todayStr, prices.pizzaLibreH]);
+            const totalLibresActivas = useMemo(() => (activeLibres || []).reduce((sum, l) => sum + ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0)), 0), [activeLibres, prices.pizzaLibreH]);
+            const granTotalHoy = totalCartaHoy + totalLibresCerradasHoy + totalLibresActivas;
+
             return (
                 <div className="bg-black min-h-screen text-white flex flex-col overflow-hidden relative">
+                    {/* MODAL RESUMEN RÁPIDO */}
                     {showTotal && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white text-black p-8 rounded-2xl max-w-sm w-full shadow-2xl">
-                                <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2 text-green-700"><DollarSign size={28} /> Total A La Carta</h2>
-                                <div className="text-5xl font-black text-center my-6">${history.filter(o => o.type !== 'libre').reduce((sum, o) => sum + (o.totalPrice || 0), 0).toLocaleString()}</div>
-                                <div className="text-gray-500 text-center mb-6">{history.filter(o => o.type !== 'libre').length} pedidos para llevar completados</div>
-                                <div className="text-sm text-gray-400 text-center mb-6 italic">* No incluye mesas libres (se cobran por persona).</div>
-                                <button onClick={() => setShowTotal(false)} className="w-full bg-gray-200 hover:bg-gray-300 py-3 rounded-lg font-bold text-lg">CERRAR</button>
+                            <div className="bg-white text-black p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4">
+                                <h2 className="text-xl font-bold flex items-center justify-center gap-2 text-green-700">
+                                    <DollarSign size={24} /> Balance del Día
+                                </h2>
+
+                                <div className="space-y-2 border-y py-3 text-sm">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 font-semibold">Total A La Carta:</span>
+                                        <span className="font-bold text-gray-900">${totalCartaHoy.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-purple-700 font-semibold">Mesas Libres Cerradas:</span>
+                                        <span className="font-bold text-purple-800">${totalLibresCerradasHoy.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-amber-700 font-semibold">Mesas Libres Activas:</span>
+                                        <span className="font-bold text-amber-800">${totalLibresActivas.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t font-black text-lg text-emerald-700">
+                                        <span>Total General:</span>
+                                        <span>${granTotalHoy.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => { setShowTotal(false); onOpenReport(); }}
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 shadow"
+                                    >
+                                        <Download size={16} /> Ver y Guardar PDF
+                                    </button>
+                                    <button
+                                        onClick={() => setShowTotal(false)}
+                                        className="bg-gray-200 hover:bg-gray-300 px-4 py-2.5 rounded-lg font-bold text-gray-700"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
 
+                    {/* HEADER DE COCINA */}
                     <div className="bg-red-800 p-3 flex justify-between items-center shadow-lg border-b-4 border-red-900 z-10">
                         <h1 className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"><ChefHat size={32} /> COCINA</h1>
                         <div className="flex gap-2 items-center">
-                            <button onClick={() => setShowTotal(true)} className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-bold flex items-center gap-2 shadow"><DollarSign size={20} /> TOTAL</button>
-                            <button onClick={() => setZoom(z => Math.max(0.6, z - 0.1))} className="bg-white/10 p-2 rounded ml-4 hover:bg-white/20"><ZoomOut size={20} /></button>
+                            <button onClick={() => setShowTotal(true)} className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-bold flex items-center gap-2 shadow">
+                                <DollarSign size={20} /> TOTAL (${granTotalHoy.toLocaleString()})
+                            </button>
+                            <button onClick={onOpenReport} className="bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded text-white font-bold flex items-center gap-1.5 shadow text-xs" title="Guardar Reporte en PDF">
+                                <FileText size={16} /> REPORTE PDF
+                            </button>
+                            <button onClick={() => setZoom(z => Math.max(0.6, z - 0.1))} className="bg-white/10 p-2 rounded ml-2 hover:bg-white/20"><ZoomOut size={20} /></button>
                             <button onClick={() => setZoom(z => Math.min(1.6, z + 0.1))} className="bg-white/10 p-2 rounded hover:bg-white/20"><ZoomIn size={20} /></button>
                             <button onClick={() => setView('landing')} className="text-xs ml-4 text-red-300 underline self-center hover:text-white">Salir</button>
                         </div>
                     </div>
+
+                    {/* PEDIDOS EN PANTALLA DE COCINA */}
                     <div className="flex-1 overflow-auto p-4 bg-zinc-900">
-                        {orders.length === 0 ? <div className="h-full flex flex-col items-center justify-center opacity-30"><ChefHat size={120} /><h2 className="text-4xl font-bold mt-4">Esperando...</h2></div> : (
+                        {orders.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center opacity-30">
+                                <ChefHat size={120} />
+                                <h2 className="text-4xl font-bold mt-4">Esperando pedidos...</h2>
+                            </div>
+                        ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start content-start" style={{ zoom: zoom }}>
                                 {orders.map((o) => (
                                     <div key={o.id} className={`relative rounded-lg overflow-hidden shadow-2xl ${o.type === 'libre' ? 'bg-indigo-900 ring-2 ring-indigo-500' : 'bg-gray-800 ring-1 ring-gray-700'}`}>
                                         <div className={`p-3 flex justify-between items-start border-b border-white/10 ${o.type === 'libre' ? 'bg-indigo-800' : 'bg-gray-700'}`}>
-                                            <div className="overflow-hidden"><h3 className="text-3xl font-black text-yellow-400 truncate leading-none mb-1">{o.client}</h3><div className="flex items-center gap-2 text-gray-300 font-mono text-sm"><span>{o.timestamp}</span>{o.type === 'libre' && <span className="text-indigo-200 font-bold">• MESA LIBRE</span>}</div></div>
+                                            <div className="overflow-hidden">
+                                                <h3 className="text-3xl font-black text-yellow-400 truncate leading-none mb-1">{o.client}</h3>
+                                                <div className="flex items-center gap-2 text-gray-300 font-mono text-sm">
+                                                    <span>{o.timestamp}</span>
+                                                    {o.type === 'libre' && <span className="text-indigo-200 font-bold">• MESA LIBRE</span>}
+                                                </div>
+                                            </div>
                                             <div className="flex gap-1">
-                                                <button onClick={() => handleComplete(o)} className="bg-green-600/50 hover:bg-green-600 text-white px-3 py-2 rounded font-bold flex items-center gap-1" title="Completar"><Check size={20} /> Listo</button>
+                                                <button onClick={() => handleComplete(o)} className="bg-green-600/50 hover:bg-green-600 text-white px-3 py-2 rounded font-bold flex items-center gap-1" title="Completar">
+                                                    <Check size={20} /> Listo
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="p-4 space-y-4">
-                                            {o.type === 'libre' && (<div className="bg-indigo-950/50 p-3 rounded border border-indigo-500/50 text-center space-y-2"><div className="text-sm text-indigo-300 uppercase font-bold tracking-widest">{o.round === 1 ? 'PRIMER LIBRE' : `${o.round}ª RONDA`}</div><div className="text-5xl font-bold text-white flex items-center justify-center gap-2"><Users size={40} /> {o.people}</div></div>)}
-                                            {o.obs && <div className="bg-yellow-900/60 p-3 rounded border-l-4 border-yellow-500 flex items-start gap-3"><AlertCircle className="text-yellow-400 shrink-0 mt-1" size={24} /><span className="text-xl font-bold text-yellow-100 uppercase">{o.obs}</span></div>}
-                                            {o.pizzas.length > 0 && <ul className="space-y-3">{o.pizzas.map((p, i) => (<li key={i} className="border-b border-white/10 pb-2 last:border-0 last:pb-0"><div className="text-2xl font-bold leading-tight"><span className="text-green-400 inline-block w-8 text-right mr-2">{p.qty}x</span><span className="text-gray-100">{p.description}</span></div>{p.obs && <div className="mt-1 ml-10 bg-yellow-900/50 text-yellow-200 px-2 py-1 rounded text-lg font-bold border border-yellow-700/50 flex items-center gap-2"><AlertCircle size={18} /> {p.obs}</div>}</li>))}</ul>}
-                                            {o.drinks && o.drinks.length > 0 && <ul className="space-y-3 mt-3">{o.drinks.map((d, i) => (<li key={`d${i}`} className="border-b border-white/10 pb-2 last:border-0 last:pb-0"><div className="text-2xl font-bold leading-tight text-blue-300"><span className="text-blue-400 inline-block w-8 text-right mr-2">{d.qty}x</span><span className="text-gray-100">{d.name}</span></div></li>))}</ul>}
-                                            {o.empanadas > 0 && <div className="bg-yellow-900/30 p-2 rounded border border-yellow-600/30 mt-2 flex items-center gap-3"><span className="text-3xl font-bold text-yellow-400 w-10 text-right">{o.empanadas}</span><span className="text-lg font-bold text-yellow-100 uppercase tracking-wide">Empanadas</span></div>}
+                                            {o.type === 'libre' && (
+                                                <div className="bg-indigo-950/50 p-3 rounded border border-indigo-500/50 text-center space-y-2">
+                                                    <div className="text-sm text-indigo-300 uppercase font-bold tracking-widest">{o.round === 1 ? 'PRIMER LIBRE' : `${o.round}ª RONDA`}</div>
+                                                    <div className="text-5xl font-bold text-white flex items-center justify-center gap-2"><Users size={40} /> {o.people}</div>
+                                                </div>
+                                            )}
+                                            {o.obs && (
+                                                <div className="bg-yellow-900/60 p-3 rounded border-l-4 border-yellow-500 flex items-start gap-3">
+                                                    <AlertCircle className="text-yellow-400 shrink-0 mt-1" size={24} />
+                                                    <span className="text-xl font-bold text-yellow-100 uppercase">{o.obs}</span>
+                                                </div>
+                                            )}
+                                            {o.pizzas && o.pizzas.length > 0 && (
+                                                <ul className="space-y-3">
+                                                    {o.pizzas.map((p, i) => (
+                                                        <li key={i} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
+                                                            <div className="text-2xl font-bold leading-tight">
+                                                                <span className="text-green-400 inline-block w-8 text-right mr-2">{p.qty}x</span>
+                                                                <span className="text-gray-100">{p.description}</span>
+                                                            </div>
+                                                            {p.obs && (
+                                                                <div className="mt-1 ml-10 bg-yellow-900/50 text-yellow-200 px-2 py-1 rounded text-lg font-bold border border-yellow-700/50 flex items-center gap-2">
+                                                                    <AlertCircle size={18} /> {p.obs}
+                                                                </div>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            {o.drinks && o.drinks.length > 0 && (
+                                                <ul className="space-y-3 mt-3">
+                                                    {o.drinks.map((d, i) => (
+                                                        <li key={`d${i}`} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
+                                                            <div className="text-2xl font-bold leading-tight text-blue-300">
+                                                                <span className="text-blue-400 inline-block w-8 text-right mr-2">{d.qty}x</span>
+                                                                <span className="text-gray-100">{d.name}</span>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            {o.empanadas > 0 && (
+                                                <div className="bg-yellow-900/30 p-2 rounded border border-yellow-600/30 mt-2 flex items-center gap-3">
+                                                    <span className="text-3xl font-bold text-yellow-400 w-10 text-right">{o.empanadas}</span>
+                                                    <span className="text-lg font-bold text-yellow-100 uppercase tracking-wide">Empanadas</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -820,6 +1510,145 @@
                 </div>
             );
         };
+
+        // --- APLICACIÓN PRINCIPAL ---
+        function BochasApp() {
+            const [view, setView] = useState('landing');
+            const [orders, setOrders] = useState([]);
+            const [activeLibres, setActiveLibres] = useState([]);
+            const [prices, setPrices] = useState(INITIAL_PRICES);
+            const [history, setHistory] = useState([]);
+            const [dialog, setDialog] = useState(null);
+            const [showReport, setShowReport] = useState(false);
+
+            useEffect(() => {
+                let unsubscribe = () => { };
+                const init = async () => {
+                    const data = await storage.loadInitial();
+                    setOrders(data.orders || []);
+                    setActiveLibres(data.libres || []);
+                    const stored = data.prices || {};
+                    const mergedPrices = {
+                        ...INITIAL_PRICES,
+                        ...stored,
+                        flavors: { ...INITIAL_PRICES.flavors, ...(stored.flavors || {}) },
+                        drinks: stored.drinks || {}
+                    };
+                    setPrices(mergedPrices);
+                    setHistory(data.history || []);
+                    unsubscribe = storage.onUpdate(({ key, value }) => {
+                        if (key === 'orders') setOrders(value);
+                        if (key === 'libres') setActiveLibres(value);
+                        if (key === 'prices') {
+                            const merged = {
+                                ...INITIAL_PRICES, ...value,
+                                flavors: { ...INITIAL_PRICES.flavors, ...(value.flavors || {}) },
+                                drinks: value.drinks || {}
+                            };
+                            setPrices(merged);
+                        }
+                        if (key === 'history') setHistory(value);
+                    });
+                };
+                init();
+                return () => unsubscribe();
+            }, []);
+
+            const saveOrders = useCallback((d) => { setOrders(d); storage.set('orders', d); }, []);
+            const saveLibres = useCallback((d) => { setActiveLibres(d); storage.set('libres', d); }, []);
+            const savePrices = useCallback((d) => { setPrices(d); storage.set('prices', d); }, []);
+            const saveHistory = useCallback((d) => { setHistory(d); storage.set('history', d); }, []);
+
+            const showConfirm = useCallback((message, onConfirm) => {
+                setDialog({ type: 'confirm', message, onConfirm });
+            }, []);
+            const showAlert = useCallback((message) => {
+                setDialog({ type: 'alert', message });
+            }, []);
+
+            const renderView = () => {
+                switch (view) {
+                    case 'reception':
+                        return (
+                            <ReceptionView
+                                setView={setView}
+                                orders={orders}
+                                setOrders={saveOrders}
+                                activeLibres={activeLibres}
+                                setActiveLibres={saveLibres}
+                                prices={prices}
+                                setPrices={savePrices}
+                                history={history}
+                                setHistory={saveHistory}
+                                showConfirm={showConfirm}
+                                showAlert={showAlert}
+                                onOpenReport={() => setShowReport(true)}
+                            />
+                        );
+                    case 'kitchen':
+                        return (
+                            <KitchenView
+                                setView={setView}
+                                orders={orders}
+                                setOrders={saveOrders}
+                                history={history}
+                                setHistory={saveHistory}
+                                showConfirm={showConfirm}
+                                showAlert={showAlert}
+                                prices={prices}
+                                activeLibres={activeLibres}
+                                onOpenReport={() => setShowReport(true)}
+                            />
+                        );
+                    default:
+                        return (
+                            <Landing
+                                setView={setView}
+                                showConfirm={showConfirm}
+                                onOpenReport={() => setShowReport(true)}
+                                history={history}
+                                activeLibres={activeLibres}
+                                orders={orders}
+                                prices={prices}
+                            />
+                        );
+                }
+            };
+
+            return (
+                <div className="min-h-screen font-sans text-gray-900 bg-gray-900 relative">
+                    {renderView()}
+
+                    {/* MODAL DE REPORTE Y GUARDADO EN PDF */}
+                    <ReportModal
+                        isOpen={showReport}
+                        onClose={() => setShowReport(false)}
+                        history={history}
+                        activeLibres={activeLibres}
+                        orders={orders}
+                        prices={prices}
+                    />
+
+                    {/* MODAL DE DIÁLOGO */}
+                    {dialog && (
+                        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center">
+                                {dialog.type === 'alert' ? <AlertTriangle size={48} className="text-yellow-500 mb-4" /> : <HelpCircle size={48} className="text-blue-500 mb-4" />}
+                                <h3 className="text-xl font-bold mb-6 text-gray-800 whitespace-pre-wrap">{dialog.message}</h3>
+                                <div className="flex gap-4 w-full">
+                                    {dialog.type === 'confirm' && (
+                                        <button onClick={() => setDialog(null)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-bold">CANCELAR</button>
+                                    )}
+                                    <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className={`flex-1 text-white py-3 rounded-lg font-bold ${dialog.type === 'alert' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}>
+                                        {dialog.type === 'alert' ? 'ENTENDIDO' : 'CONFIRMAR'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<BochasApp />);
