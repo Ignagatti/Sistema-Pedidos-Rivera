@@ -136,7 +136,8 @@
         const FileText = (p) => <Icon {...p} d={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></>} />;
         const Download = (p) => <Icon {...p} d={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></>} />;
         const Calendar = (p) => <Icon {...p} d={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></>} />;
-
+        const RotateCw = (p) => <Icon {...p} d={<><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></>} />;
+        const LogOut = (p) => <Icon {...p} d={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></>} />;
         const DEFAULT_FLAVORS = ["Muzzarella", "Provenzal", "Cebolla", "Calabresa", "Margarita", "Napolitana", "Anchoa", "Rúcula", "Especial", "3 Quesos", "Roquefort"];
         const INITIAL_PRICES = {
             box: 0,
@@ -160,6 +161,84 @@
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        };
+
+        const ActiveLibresList = ({ libres, onRound, onClose }) => {
+            if (!libres || libres.length === 0) return (
+                <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4">Sin mesas activas</div>
+            );
+            return (
+                <div className="flex-1 overflow-y-auto space-y-2 p-2">
+                    {libres.map(l => (
+                        <div key={l.id} className="bg-white rounded shadow-sm border-l-4 border-purple-500 p-2 flex flex-col gap-1.5">
+                            <div className="flex justify-between items-center">
+                                <span className="font-black text-gray-800 text-sm truncate">{l.client}</span>
+                                <span className="text-[10px] text-gray-500 font-mono">{l.timestamp}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">{l.people} pers.</span>
+                                {l.obs && <span className="text-gray-500 italic truncate max-w-[100px]">{l.obs}</span>}
+                            </div>
+                            <div className="flex gap-1 mt-1">
+                                <button onClick={() => onRound(l)} className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-700 py-1 rounded text-xs font-bold transition flex items-center justify-center gap-1">
+                                    <RotateCw size={12} /> +Ronda ({l.round || 1}ª)
+                                </button>
+                                <button onClick={() => onClose(l)} className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold transition relative group" title="Cerrar y Cobrar">
+                                    <LogOut size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const KitchenOrdersList = ({ orders, onComplete, onDelete, prices }) => {
+            const cartaOrders = orders.filter(o => o.type !== 'libre');
+            if (!cartaOrders || cartaOrders.length === 0) return (
+                <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4 bg-slate-100">Sin pedidos</div>
+            );
+            return (
+                <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-100">
+                    {cartaOrders.map(o => (
+                        <div key={o.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                            <div className="bg-slate-200 px-2 py-1.5 flex justify-between items-center border-b border-gray-200">
+                                <div className="font-black text-slate-800 text-xs truncate max-w-[150px]">{o.client}</div>
+                                <div className="text-[10px] font-mono text-slate-500">{o.timestamp}</div>
+                            </div>
+                            <div className="p-2 space-y-1.5 text-xs text-gray-700 flex-1">
+                                {o.obs && (
+                                    <div className="bg-yellow-50 text-yellow-800 p-1 rounded font-bold border border-yellow-200 flex gap-1 items-start">
+                                        <AlertCircle size={12} className="shrink-0 mt-0.5" /> <span>{o.obs}</span>
+                                    </div>
+                                )}
+                                {o.pizzas && o.pizzas.map((p, i) => (
+                                    <div key={i} className="flex justify-between font-medium">
+                                        <span><span className="font-bold">{p.qty}x</span> {p.description} {p.withBox && '📦'}</span>
+                                        {p.obs && <span className="text-orange-600 italic ml-1">({p.obs})</span>}
+                                    </div>
+                                ))}
+                                {o.drinks && o.drinks.map((d, i) => (
+                                    <div key={`d${i}`} className="flex justify-between font-medium text-blue-800">
+                                        <span><span className="font-bold">{d.qty}x</span> {d.name}</span>
+                                    </div>
+                                ))}
+                                {o.empanadas > 0 && (
+                                    <div className="font-bold text-yellow-700">{o.empanadas}x Empanadas</div>
+                                )}
+                            </div>
+                            <div className="bg-gray-50 p-1.5 flex gap-1 border-t border-gray-200 mt-auto">
+                                <button onClick={() => onComplete(o)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-2 rounded flex items-center justify-center gap-1 shadow-sm transition flex-1 text-[11px]">
+                                    <Check size={12} /> LISTO
+                                </button>
+                                <button onClick={() => onDelete(o)} className="bg-red-100 hover:bg-red-200 text-red-600 px-2 rounded flex items-center justify-center transition" title="Eliminar sin sumar">
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
         };
 
         // --- COMPONENTE DE REPORTE Y GUARDADO DE PDF POR FECHA ---
