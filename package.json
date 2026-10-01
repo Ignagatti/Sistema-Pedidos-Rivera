@@ -12,7 +12,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "png-to-ico": "^3.0.2"
   },
   "build": {
     "appId": "com.clubbochas.app",
@@ -21,10 +22,33 @@
       "main.js",
       "preload.js",
       "index.html",
-      "libs/**/*" 
+      "libs/**/*",
+      "FOTO.PNG",
+      "icono.ico",
+      "assets/**/*"
     ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Club Bochas Manager"
     }
   }
 }

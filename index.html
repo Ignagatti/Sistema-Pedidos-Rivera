@@ -59,6 +59,30 @@
                 display: block !important;
             }
 
+            #root {
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            #report-modal-wrapper {
+                position: static !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                height: auto !important;
+                width: 100% !important;
+                display: block !important;
+            }
+
+            #report-print-container {
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
             .page-break-inside-avoid, .report-section, tr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
@@ -163,6 +187,8 @@
             return `${year}-${month}-${day}`;
         };
 
+        const generateId = () => `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
         const ActiveLibresList = ({ libres, onRound, onClose }) => {
             if (!libres || libres.length === 0) return (
                 <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4">Sin mesas activas</div>
@@ -194,7 +220,7 @@
         };
 
         const KitchenOrdersList = ({ orders, onComplete, onDelete, prices }) => {
-            const cartaOrders = orders.filter(o => o.type !== 'libre');
+            const cartaOrders = (orders || []).filter(o => o.type !== 'libre');
             if (!cartaOrders || cartaOrders.length === 0) return (
                 <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4 bg-slate-100">Sin pedidos</div>
             );
@@ -212,13 +238,13 @@
                                         <AlertCircle size={12} className="shrink-0 mt-0.5" /> <span>{o.obs}</span>
                                     </div>
                                 )}
-                                {o.pizzas && o.pizzas.map((p, i) => (
+                                {Array.isArray(o.pizzas) && o.pizzas.map((p, i) => (
                                     <div key={i} className="flex justify-between font-medium">
                                         <span><span className="font-bold">{p.qty}x</span> {p.description} {p.withBox && '📦'}</span>
                                         {p.obs && <span className="text-orange-600 italic ml-1">({p.obs})</span>}
                                     </div>
                                 ))}
-                                {o.drinks && o.drinks.map((d, i) => (
+                                {Array.isArray(o.drinks) && o.drinks.map((d, i) => (
                                     <div key={`d${i}`} className="flex justify-between font-medium text-blue-800">
                                         <span><span className="font-bold">{d.qty}x</span> {d.name}</span>
                                     </div>
@@ -273,7 +299,11 @@
 
             // Mesas Libres Cerradas (Facturadas)
             const closedLibres = filteredHistory.filter(o => o.type === 'libre');
-            const totalLibresCerradas = closedLibres.reduce((sum, l) => sum + (Number(l.totalPrice) || ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
+            const totalLibresCerradas = closedLibres.reduce((sum, l) => {
+                const explicitPrice = l.totalPrice != null && !isNaN(Number(l.totalPrice)) ? Number(l.totalPrice) : null;
+                const fallbackPrice = (Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0);
+                return sum + (explicitPrice !== null ? explicitPrice : fallbackPrice);
+            }, 0);
             const totalPersonasLibresCerradas = closedLibres.reduce((sum, l) => sum + (Number(l.people) || 0), 0);
 
             // Mesas Libres Activas
@@ -380,7 +410,7 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-black/85 z-[9990] flex flex-col items-center justify-start p-2 sm:p-4 overflow-y-auto">
+                <div id="report-modal-wrapper" className="fixed inset-0 bg-black/85 z-[9990] flex flex-col items-center justify-start p-2 sm:p-4 overflow-y-auto print:static print:bg-white print:p-0 print:m-0 print:overflow-visible">
                     {/* BARRA SUPERIOR DE CONTROL */}
                     <div className="sticky top-2 z-[9999] w-full max-w-[210mm] bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-white no-print">
                         {/* SELECTOR DE FECHA */}
@@ -564,7 +594,7 @@
                                             {closedLibres.map((l, idx) => {
                                                 const p = Number(l.people) || 0;
                                                 const pr = Number(l.pricePerPerson) || Number(prices.pizzaLibreH) || 0;
-                                                const tot = Number(l.totalPrice) || (p * pr);
+                                                const tot = l.totalPrice != null && !isNaN(Number(l.totalPrice)) ? Number(l.totalPrice) : (p * pr);
                                                 return (
                                                     <tr key={`cl-${l.id || idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-purple-50/40"}>
                                                         <td className="p-2 font-mono text-gray-500 font-bold">{idx + 1}</td>
@@ -647,7 +677,7 @@
                                                     <td className="p-2 text-center font-mono text-gray-600 whitespace-nowrap">{o.timestamp || '--'}</td>
                                                     <td className="p-2 font-bold text-gray-900">{o.client}</td>
                                                     <td className="p-2">
-                                                        {o.pizzas && o.pizzas.length > 0 ? (
+                                                        {Array.isArray(o.pizzas) && o.pizzas.length > 0 ? (
                                                             <div className="space-y-0.5">
                                                                 {o.pizzas.map((p, i) => (
                                                                     <div key={i} className="leading-tight text-[11px]">
@@ -663,7 +693,7 @@
                                                         {o.empanadas > 0 ? `${o.empanadas} u.` : '-'}
                                                     </td>
                                                     <td className="p-2">
-                                                        {o.drinks && o.drinks.length > 0 ? (
+                                                        {Array.isArray(o.drinks) && o.drinks.length > 0 ? (
                                                             <div className="space-y-0.5">
                                                                 {o.drinks.map((d, i) => (
                                                                     <div key={i} className="leading-tight text-blue-800 text-[11px]">
@@ -742,7 +772,9 @@
                                             .map(([flavor, count]) => (
                                                 <div key={flavor} className="flex justify-between items-center py-0.5 border-b border-orange-100 last:border-0">
                                                     <span className="font-semibold text-gray-800">{flavor}</span>
-                                                    <span className="font-bold text-orange-900 font-mono">{count}x</span>
+                                                    <span className="font-bold text-orange-900 font-mono">
+                                                        {Number.isInteger(count) ? `${count}x` : `${Number(count.toFixed(1))}x`}
+                                                    </span>
                                                 </div>
                                             ))}
                                     </div>
@@ -770,7 +802,7 @@
             const [cleared, setCleared] = useState(false);
 
             const handleClear = async () => {
-                showConfirm('🚨 ¿Seguro que quieres CERRAR CAJA? Se vaciarán pedidos y mesas (los precios se mantienen).', async () => {
+                showConfirm('🚨 ¿Seguro que quieres CERRAR CAJA? Se vaciarán pedidos y mesas activas (el historial de ventas y los precios se mantienen seguros).', async () => {
                     await storage.clearAll();
                     setCleared(true);
                     setTimeout(() => setCleared(false), 3000);
@@ -779,8 +811,8 @@
 
             const totalRecaudadoHoy = useMemo(() => {
                 const todayStr = getLocalDateString(new Date());
-                const totalCarta = history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (Number(o.totalPrice) || 0), 0);
-                const totalLibres = history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (Number(o.totalPrice) || ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
+                const totalCarta = history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : 0), 0);
+                const totalLibres = history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
                 return totalCarta + totalLibres;
             }, [history, prices.pizzaLibreH]);
 
@@ -894,14 +926,14 @@
 
             const calculatedTotal = useMemo(() => {
                 if (isLibre) {
-                    const people = parseInt(peopleQtyInput, 10) || 0;
-                    const librePrice = parseInt(prices.pizzaLibreH, 10) || 0;
+                    const people = Math.max(0, parseInt(peopleQtyInput, 10) || 0);
+                    const librePrice = Math.max(0, parseInt(prices.pizzaLibreH, 10) || 0);
                     return people * librePrice;
                 }
                 const pizzasSum = currentPizzas.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1), 0);
                 const drinksSum = currentDrinks.reduce((sum, d) => sum + (Number(d.price) || 0) * (Number(d.qty) || 1), 0);
-                const empQty = parseInt(empQtyInput, 10) || 0;
-                const empSum = empQty * (Number(prices.empanada) || 0);
+                const empQty = Math.max(0, parseInt(empQtyInput, 10) || 0);
+                const empSum = empQty * Math.max(0, Number(prices.empanada) || 0);
                 return pizzasSum + drinksSum + empSum;
             }, [isLibre, peopleQtyInput, prices.pizzaLibreH, prices.empanada, currentPizzas, currentDrinks, empQtyInput]);
 
@@ -921,7 +953,8 @@
             const addPizza = () => {
                 if (selectedFlavors.length === 0) return showAlert("Seleccioná al menos un gusto");
 
-                const qty = parseInt(pizzaQtyRef.current?.value, 10) || 1;
+                const rawQty = parseInt(pizzaQtyRef.current?.value, 10);
+                const qty = isNaN(rawQty) || rawQty < 1 ? 1 : rawQty;
                 const obs = obsRef.current?.value || "";
                 const type = pizzaTypeUI;
 
@@ -938,12 +971,12 @@
 
                 const unitPrice = getPizzaPrice(type, selectedFlavors);
                 const boxPrice = withBox ? (parseInt(prices.box, 10) || 0) : 0;
-                const totalUnitPrice = unitPrice + boxPrice;
+                const totalUnitPrice = Math.max(0, unitPrice + boxPrice);
 
                 setCurrentPizzas([
                     ...currentPizzas,
                     {
-                        id: Date.now(),
+                        id: generateId(),
                         description: desc,
                         qty,
                         type,
@@ -964,30 +997,31 @@
             };
 
             const addDrinkQuick = (drinkName) => {
-                const price = parseInt(prices.drinks[drinkName], 10) || 0;
+                const price = Math.max(0, parseInt(prices.drinks?.[drinkName], 10) || 0);
                 const existingIndex = currentDrinks.findIndex(d => d.name === drinkName);
                 if (existingIndex !== -1) {
                     const updated = [...currentDrinks];
                     updated[existingIndex].qty += 1;
                     setCurrentDrinks(updated);
                 } else {
-                    setCurrentDrinks([...currentDrinks, { id: Date.now(), name: drinkName, qty: 1, price }]);
+                    setCurrentDrinks([...currentDrinks, { id: generateId(), name: drinkName, qty: 1, price }]);
                 }
             };
 
             const submitOrder = () => {
                 const client = clientNameRef.current.value.trim();
-                if (!client) return showAlert("Falta nombre");
+                if (!client) return showAlert("Falta ingresar el nombre del cliente o mesa");
 
-                const newId = Date.now();
+                const newId = generateId();
                 const currentDateStr = getLocalDateString(new Date());
 
                 if (isLibre) {
-                    const people = parseInt(peopleQtyRef.current.value, 10) || 0;
-                    const obs = libreObsRef.current.value;
-                    if (!people || people <= 0) return showAlert("Falta cantidad de personas");
+                    const rawPeople = parseInt(peopleQtyRef.current.value, 10);
+                    if (isNaN(rawPeople) || rawPeople <= 0) return showAlert("Ingresá una cantidad de personas válida (mayor a 0)");
+                    const people = rawPeople;
+                    const obs = (libreObsRef.current.value || "").trim();
 
-                    const pricePerPerson = parseInt(prices.pizzaLibreH, 10) || 0;
+                    const pricePerPerson = Math.max(0, parseInt(prices.pizzaLibreH, 10) || 0);
                     const tableTotal = people * pricePerPerson;
 
                     const newLibre = {
@@ -1005,7 +1039,7 @@
                     setActiveLibres([...activeLibres, newLibre]);
 
                     setOrders([...orders, {
-                        id: newId + '_1',
+                        id: `${newId}_r1`,
                         libreId: newId,
                         client,
                         type: 'libre',
@@ -1024,12 +1058,13 @@
                     libreObsRef.current.value = "";
                     setPeopleQtyInput('');
                 } else {
-                    const empQty = parseInt(empanadasRef.current.value, 10) || 0;
-                    if (currentPizzas.length === 0 && empQty === 0 && currentDrinks.length === 0) return showAlert("Pedido vacío");
+                    const rawEmp = parseInt(empanadasRef.current.value, 10);
+                    const empQty = isNaN(rawEmp) || rawEmp < 0 ? 0 : rawEmp;
+                    if (currentPizzas.length === 0 && empQty === 0 && currentDrinks.length === 0) return showAlert("El pedido está vacío. Agregá al menos una pizza, bebida o empanada");
 
                     const pizzasTotal = currentPizzas.reduce((sum, p) => sum + (Number(p.price) * Number(p.qty)), 0);
                     const drinksTotal = currentDrinks.reduce((sum, d) => sum + (Number(d.price) * Number(d.qty)), 0);
-                    const empTotal = empQty * (parseInt(prices.empanada, 10) || 0);
+                    const empTotal = empQty * Math.max(0, parseInt(prices.empanada, 10) || 0);
                     const total = pizzasTotal + drinksTotal + empTotal;
 
                     setOrders([...orders, {
@@ -1054,11 +1089,11 @@
             };
 
             const handleRound = useCallback((l) => {
-                const nr = l.round + 1;
+                const nr = (l.round || 1) + 1;
                 const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr } : x);
                 setActiveLibres(updated);
                 setOrders([...orders, {
-                    id: Date.now(),
+                    id: generateId(),
                     libreId: l.id,
                     client: l.client,
                     pizzas: [],
@@ -1230,12 +1265,15 @@
                                         <input ref={libreObsRef} type="text" placeholder="Observación Mesa (mozo, ubicación, etc)..." className="flex-1 p-2 border-2 border-purple-400 rounded h-[46px]" />
                                     </div>
                                     
-                                    <div className="bg-slate-200 border-2 border-purple-300 rounded-lg p-2 flex flex-col h-[52vh]">
-                                        <div className="bg-purple-200 text-purple-900 px-3 py-1.5 rounded text-xs font-black uppercase flex justify-between items-center mb-2">
-                                            <span className="flex items-center gap-1.5"><Users size={15} /> Mesas Libres Activas</span>
-                                            <span className="bg-purple-700 text-white px-2 py-0.5 rounded-full text-[11px]">{activeLibres.length}</span>
+                                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-5 flex flex-col items-center justify-center text-center space-y-2 text-purple-900 mt-2 shadow-sm">
+                                        <Users size={32} className="text-purple-600" />
+                                        <div className="font-black text-sm">MODO MESA LIBRE ACTIVO</div>
+                                        <p className="text-xs text-purple-700 max-w-sm leading-relaxed">
+                                            Ingresá el nombre o número de mesa y la cantidad de comensales. Al pulsar <strong>INICIAR MESA LIBRE</strong> se enviará la comanda de la 1ª ronda a Cocina y quedará activa en el panel lateral derecho para gestionar rondas y cobro.
+                                        </p>
+                                        <div className="text-xs font-bold bg-purple-200/80 text-purple-950 px-3 py-1 rounded-full mt-1">
+                                            Tarifa actual: ${(prices.pizzaLibreH || 0).toLocaleString()} por persona
                                         </div>
-                                        <ActiveLibresList libres={activeLibres} onRound={handleRound} onClose={handleCloseLibre} />
                                     </div>
                                 </div>
                             )}
@@ -1439,8 +1477,8 @@
             };
 
             const todayStr = useMemo(() => getLocalDateString(new Date()), []);
-            const totalCartaHoy = useMemo(() => history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0), [history, todayStr]);
-            const totalLibresCerradasHoy = useMemo(() => history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (Number(o.totalPrice) || ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0), [history, todayStr, prices.pizzaLibreH]);
+            const totalCartaHoy = useMemo(() => history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : 0), 0), [history, todayStr]);
+            const totalLibresCerradasHoy = useMemo(() => history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0), [history, todayStr, prices.pizzaLibreH]);
             const totalLibresActivas = useMemo(() => (activeLibres || []).reduce((sum, l) => sum + ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0)), 0), [activeLibres, prices.pizzaLibreH]);
             const granTotalHoy = totalCartaHoy + totalLibresCerradasHoy + totalLibresActivas;
 
@@ -1545,7 +1583,7 @@
                                                     <span className="text-xl font-bold text-yellow-100 uppercase">{o.obs}</span>
                                                 </div>
                                             )}
-                                            {o.pizzas && o.pizzas.length > 0 && (
+                                            {Array.isArray(o.pizzas) && o.pizzas.length > 0 && (
                                                 <ul className="space-y-3">
                                                     {o.pizzas.map((p, i) => (
                                                         <li key={i} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
@@ -1562,7 +1600,7 @@
                                                     ))}
                                                 </ul>
                                             )}
-                                            {o.drinks && o.drinks.length > 0 && (
+                                            {Array.isArray(o.drinks) && o.drinks.length > 0 && (
                                                 <ul className="space-y-3 mt-3">
                                                     {o.drinks.map((d, i) => (
                                                         <li key={`d${i}`} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
@@ -1696,7 +1734,9 @@
 
             return (
                 <div className="min-h-screen font-sans text-gray-900 bg-gray-900 relative">
-                    {renderView()}
+                    <div className={showReport ? 'no-print' : ''}>
+                        {renderView()}
+                    </div>
 
                     {/* MODAL DE REPORTE Y GUARDADO EN PDF */}
                     <ReportModal
@@ -1710,7 +1750,7 @@
 
                     {/* MODAL DE DIÁLOGO */}
                     {dialog && (
-                        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 no-print">
                             <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center">
                                 {dialog.type === 'alert' ? <AlertTriangle size={48} className="text-yellow-500 mb-4" /> : <HelpCircle size={48} className="text-blue-500 mb-4" />}
                                 <h3 className="text-xl font-bold mb-6 text-gray-800 whitespace-pre-wrap">{dialog.message}</h3>
