@@ -142,21 +142,23 @@ ipcMain.handle('storage:clearAll', async () => {
 
     try {
         const allFiles = await fs.readdir(BACKUP_PATH);
-        const opKeys = ['orders', 'libres'];
+        const opKeys = ['orders', 'libres', 'history'];
         const toDelete = allFiles.filter(f =>
             opKeys.some(k => f.startsWith(`${k}_`)) && f.endsWith('.json')
         );
         await Promise.all(toDelete.map(f => fs.unlink(path.join(BACKUP_PATH, f)).catch(() => {})));
     } catch (_) {}
 
-    const defaults = { orders: [], libres: [] };
+    const defaults = { orders: [], libres: [], history: [] };
     await Promise.all([
         writeJSON(FILES.orders, defaults.orders),
-        writeJSON(FILES.libres, defaults.libres)
+        writeJSON(FILES.libres, defaults.libres),
+        writeJSON(FILES.history, defaults.history)
     ]);
     BrowserWindow.getAllWindows().forEach(w => {
         w.webContents.send('storage:update', { key: 'orders',  value: defaults.orders });
         w.webContents.send('storage:update', { key: 'libres',  value: defaults.libres });
+        w.webContents.send('storage:update', { key: 'history', value: defaults.history });
     });
     return true;
 });

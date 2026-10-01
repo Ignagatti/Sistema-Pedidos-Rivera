@@ -119,7 +119,7 @@
         window.onerror = function (msg, url, line) {
             const ov = document.getElementById('error-overlay');
             ov.style.display = 'block';
-            ov.textContent = "⛔ ERROR:\n" + msg + "\nEn: " + url + ":" + line;
+            ov.textContent = "ERROR:\n" + msg + "\nEn: " + url + ":" + line;
             return false;
         };
     </script>
@@ -149,7 +149,7 @@
         const Settings = (p) => <Icon {...p} d={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V2a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>} />;
         const X = (p) => <Icon {...p} d={<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>} />;
         const ZoomIn = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="11" x2="11" y1="8" y2="14" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
-        const ZoomOut = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="11" x2="11" y1="8" y2="14" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
+        const ZoomOut = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="8" x2="14" y1="11" y2="11" /></>} />;
         const AlertCircle = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>} />;
         const Check = (p) => <Icon {...p} d={<><polyline points="20 6 9 17 4 12" /></>} />;
         const DollarSign = (p) => <Icon {...p} d={<><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>} />;
@@ -189,7 +189,7 @@
 
         const generateId = () => `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-        const ActiveLibresList = ({ libres, onRound, onClose }) => {
+        const ActiveLibresList = ({ libres, onRound, onListo, onClose }) => {
             if (!libres || libres.length === 0) return (
                 <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4">Sin mesas activas</div>
             );
@@ -203,13 +203,32 @@
                             </div>
                             <div className="flex justify-between items-center text-xs">
                                 <span className="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">{l.people} pers.</span>
-                                {l.obs && <span className="text-gray-500 italic truncate max-w-[100px]">{l.obs}</span>}
+                                {l.status === 'cocinando' ? (
+                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                                        En Cocina ({getLibreRoundTitle(l.round)})
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
+                                        Comiendo ({getLibreRoundTitle(l.round)})
+                                    </span>
+                                )}
                             </div>
+                            {l.obs && (
+                                <div className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded flex items-center gap-1.5">
+                                    <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                                    <span className="truncate">{l.obs}</span>
+                                </div>
+                            )}
                             <div className="flex gap-1 mt-1">
+                                {l.status === 'cocinando' && onListo && (
+                                    <button onClick={() => onListo(l)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm" title="Listo (Ya salió de cocina)">
+                                        <Check size={12} /> Salió
+                                    </button>
+                                )}
                                 <button onClick={() => onRound(l)} className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-700 py-1 rounded text-xs font-bold transition flex items-center justify-center gap-1">
-                                    <RotateCw size={12} /> +Ronda ({l.round || 1}ª)
+                                    <RotateCw size={12} /> +Ronda ({(l.round || 1) + 1}ª)
                                 </button>
-                                <button onClick={() => onClose(l)} className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold transition relative group" title="Cerrar y Cobrar">
+                                <button onClick={() => onClose(l)} className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold transition relative group" title="Dar de baja mesa (Ya comió)">
                                     <LogOut size={14} />
                                 </button>
                             </div>
@@ -229,7 +248,12 @@
                     {cartaOrders.map(o => (
                         <div key={o.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
                             <div className="bg-slate-200 px-2 py-1.5 flex justify-between items-center border-b border-gray-200">
-                                <div className="font-black text-slate-800 text-xs truncate max-w-[150px]">{o.client}</div>
+                                <div className="flex items-center gap-1.5 truncate max-w-[170px]">
+                                    <span className="font-black text-slate-800 text-xs truncate">{o.client}</span>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${o.destination === 'salon' || (!o.destination && isTableNumber(o.client)) ? 'bg-purple-100 text-purple-800' : 'bg-sky-100 text-sky-800'}`}>
+                                        {o.destination === 'salon' || (!o.destination && isTableNumber(o.client)) ? 'Comer' : 'Llevar'}
+                                    </span>
+                                </div>
                                 <div className="text-[10px] font-mono text-slate-500">{o.timestamp}</div>
                             </div>
                             <div className="p-2 space-y-1.5 text-xs text-gray-700 flex-1">
@@ -240,7 +264,7 @@
                                 )}
                                 {Array.isArray(o.pizzas) && o.pizzas.map((p, i) => (
                                     <div key={i} className="flex justify-between font-medium">
-                                        <span><span className="font-bold">{p.qty}x</span> {p.description} {p.withBox && '📦'}</span>
+                                        <span><span className="font-bold">{p.qty}x</span> {p.description} {p.withBox && '(Caja)'}</span>
                                         {p.obs && <span className="text-orange-600 italic ml-1">({p.obs})</span>}
                                     </div>
                                 ))}
@@ -267,606 +291,433 @@
             );
         };
 
-        // --- COMPONENTE DE REPORTE Y GUARDADO DE PDF POR FECHA ---
-        const ReportModal = ({ isOpen, onClose, history, activeLibres, orders, prices }) => {
-            if (!isOpen) return null;
+        // --- UTILIDAD DE IDENTIFICACIÓN: NÚMEROS (MESAS COMER AHÍ) VS NOMBRES (PARA LLEVAR) ---
+        const isTableNumber = (client) => {
+            if (!client) return false;
+            const str = String(client).trim().toLowerCase();
+            // Número puro: "1", "2", "14", etc.
+            if (/^\d+$/.test(str)) return true;
+            // Prefijo mesa o m con número: "mesa 1", "mesa4", "m 2", "m2"
+            if (/^(mesa|m)\s*\d+$/i.test(str)) return true;
+            return false;
+        };
 
-            const todayStr = useMemo(() => getLocalDateString(new Date()), []);
-            const [selectedDate, setSelectedDate] = useState(todayStr);
-            const [isSaving, setIsSaving] = useState(false);
-            const [saveStatus, setSaveStatus] = useState(null);
+        // --- FORMATEO DE RONDAS DE MESA LIBRE (1ra Libre, 2da Libre, 3ra Libre, etc.) ---
+        const getLibreRoundTitle = (round = 1) => {
+            const r = parseInt(round, 10) || 1;
+            if (r === 1) return '1ra Libre';
+            if (r === 2) return '2da Libre';
+            if (r === 3) return '3ra Libre';
+            if (r === 4) return '4ta Libre';
+            if (r === 5) return '5ta Libre';
+            if (r === 6) return '6ta Libre';
+            return `${r}ª Libre`;
+        };
 
-            // Filtrar historial según la fecha seleccionada
-            const filteredHistory = useMemo(() => {
-                if (selectedDate === 'all') return history;
-                return history.filter(item => {
-                    if (item.date) return item.date === selectedDate;
-                    if (item.completedAt) {
-                        try {
-                            const itemDate = getLocalDateString(new Date(item.completedAt));
-                            return itemDate === selectedDate;
-                        } catch (_) {
-                            return item.completedAt.startsWith(selectedDate);
-                        }
-                    }
-                    return selectedDate === todayStr;
-                });
-            }, [history, selectedDate, todayStr]);
-
-            const isViewingToday = selectedDate === todayStr || selectedDate === 'all';
-            const displayActiveLibres = isViewingToday ? (activeLibres || []) : [];
-            const displayActiveCarta = isViewingToday ? (orders || []).filter(o => o.type !== 'libre') : [];
-
-            // Mesas Libres Cerradas (Facturadas)
-            const closedLibres = filteredHistory.filter(o => o.type === 'libre');
-            const totalLibresCerradas = closedLibres.reduce((sum, l) => {
-                const explicitPrice = l.totalPrice != null && !isNaN(Number(l.totalPrice)) ? Number(l.totalPrice) : null;
-                const fallbackPrice = (Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0);
-                return sum + (explicitPrice !== null ? explicitPrice : fallbackPrice);
-            }, 0);
-            const totalPersonasLibresCerradas = closedLibres.reduce((sum, l) => sum + (Number(l.people) || 0), 0);
-
-            // Mesas Libres Activas
-            const totalLibresActivas = displayActiveLibres.reduce((sum, l) => sum + ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0)), 0);
-            const totalPersonasLibresActivas = displayActiveLibres.reduce((sum, l) => sum + (Number(l.people) || 0), 0);
-
-            // Total General Libres
-            const granTotalLibres = totalLibresCerradas + totalLibresActivas;
-            const granTotalPersonasLibres = totalPersonasLibresCerradas + totalPersonasLibresActivas;
-
-            // Pedidos A La Carta Completados
-            const completedCarta = filteredHistory.filter(o => o.type !== 'libre');
-            const totalCarta = completedCarta.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
-
-            // Pedidos A La Carta En Cocina
-            const totalCartaActivos = displayActiveCarta.reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
-
-            // Gran Total General
-            const granTotalRecaudado = totalLibresCerradas + totalCarta;
-            const granTotalConActivos = granTotalRecaudado + totalLibresActivas + totalCartaActivos;
-
-            // Desglose de Empanadas
-            const empanadasVendidas = completedCarta.reduce((sum, o) => sum + (Number(o.empanadas) || 0), 0);
-            const totalEmpanadasMonto = empanadasVendidas * (Number(prices.empanada) || 0);
-
-            // Desglose de Bebidas
-            const bebidasStats = {};
-            let totalBebidasUnidades = 0;
-            let totalBebidasMonto = 0;
-
-            completedCarta.forEach(o => {
-                if (o.drinks && Array.isArray(o.drinks)) {
-                    o.drinks.forEach(d => {
-                        const q = Number(d.qty) || 1;
-                        const p = Number(d.price) || (Number(prices.drinks?.[d.name]) || 0);
-                        if (!bebidasStats[d.name]) {
-                            bebidasStats[d.name] = { qty: 0, total: 0, unitPrice: p };
-                        }
-                        bebidasStats[d.name].qty += q;
-                        bebidasStats[d.name].total += (q * p);
-                        totalBebidasUnidades += q;
-                        totalBebidasMonto += (q * p);
-                    });
+        // --- CÁLCULO DEL TOTAL RECAUDADO (PIZZAS Y EMPANADAS PARA LLEVAR CON NOMBRE) ---
+        const calculateTakeawayTotals = (ordersList = [], historyList = [], prices = {}) => {
+            const all = [...(historyList || [])];
+            const historyIds = new Set((historyList || []).map(o => o.id));
+            (ordersList || []).forEach(o => {
+                if (!historyIds.has(o.id)) {
+                    all.push(o);
                 }
             });
 
-            // Desglose de Pizzas por Gusto
-            const pizzaFlavorsStats = {};
-            let totalPizzasEnteras = 0;
-            let totalPizzasMedias = 0;
+            let totalPizzasDinero = 0;
+            let totalPizzasCantidad = 0;
+            let totalEmpanadasDinero = 0;
+            let totalEmpanadasCantidad = 0;
+            const countedOrders = [];
+            const excludedOrders = [];
 
-            completedCarta.forEach(o => {
-                if (o.pizzas && Array.isArray(o.pizzas)) {
+            all.forEach(o => {
+                // Mesas libres no se computan aquí
+                if (o.type === 'libre') return;
+
+                const isTable = o.destination ? (o.destination === 'salon') : isTableNumber(o.client);
+
+                // Suma de pizzas del pedido
+                let orderPizzasMonto = 0;
+                let orderPizzasQty = 0;
+                const pizzaDetails = [];
+                if (Array.isArray(o.pizzas)) {
                     o.pizzas.forEach(p => {
                         const q = Number(p.qty) || 1;
-                        if (p.type === 'mitad') {
-                            totalPizzasMedias += q;
-                        } else {
-                            totalPizzasEnteras += q;
-                        }
-
-                        if (p.flavors && Array.isArray(p.flavors) && p.flavors.length > 0) {
-                            p.flavors.forEach(f => {
-                                pizzaFlavorsStats[f] = (pizzaFlavorsStats[f] || 0) + (q / p.flavors.length);
-                            });
-                        } else {
-                            pizzaFlavorsStats[p.description] = (pizzaFlavorsStats[p.description] || 0) + q;
-                        }
+                        const pr = Number(p.price) || 0;
+                        orderPizzasMonto += (q * pr);
+                        orderPizzasQty += q;
+                        pizzaDetails.push(`${q}x ${p.description || 'Pizza'}`);
                     });
+                }
+
+                // Suma de empanadas del pedido
+                const empQty = Number(o.empanadas) || 0;
+                const empPrice = Number(prices.empanada) || 0;
+                const orderEmpMonto = empQty * empPrice;
+
+                if (!isTable) {
+                    // Es un NOMBRE: SÍ se cuenta en el total
+                    totalPizzasDinero += orderPizzasMonto;
+                    totalPizzasCantidad += orderPizzasQty;
+                    totalEmpanadasDinero += orderEmpMonto;
+                    totalEmpanadasCantidad += empQty;
+
+                    if (orderPizzasMonto > 0 || orderEmpMonto > 0) {
+                        countedOrders.push({
+                            id: o.id,
+                            client: o.client,
+                            timestamp: o.timestamp,
+                            pizzasQty: orderPizzasQty,
+                            pizzasMonto: orderPizzasMonto,
+                            pizzasDesc: pizzaDetails.join(', '),
+                            empanadasQty: empQty,
+                            empanadasMonto: orderEmpMonto,
+                            subtotal: orderPizzasMonto + orderEmpMonto
+                        });
+                    }
+                } else {
+                    // Es un NÚMERO (para comer ahí): NO se cuenta en el total
+                    if (orderPizzasMonto > 0 || orderEmpMonto > 0) {
+                        excludedOrders.push({
+                            id: o.id,
+                            client: o.client,
+                            timestamp: o.timestamp,
+                            pizzasQty: orderPizzasQty,
+                            pizzasMonto: orderPizzasMonto,
+                            pizzasDesc: pizzaDetails.join(', '),
+                            empanadasQty: empQty,
+                            empanadasMonto: orderEmpMonto,
+                            subtotal: orderPizzasMonto + orderEmpMonto,
+                            reason: 'Mesa salón (número)'
+                        });
+                    }
                 }
             });
 
-            const displayDateFormatted = useMemo(() => {
-                if (selectedDate === 'all') return 'Todas las fechas registradas';
-                const parts = selectedDate.split('-');
-                if (parts.length === 3) {
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                }
-                return selectedDate;
-            }, [selectedDate]);
+            const granTotalRecaudado = totalPizzasDinero + totalEmpanadasDinero;
 
-            // Guardar directamente como archivo PDF
-            const handleSavePDF = async () => {
-                setIsSaving(true);
-                setSaveStatus(null);
-                const filenameDate = selectedDate === 'all' ? 'Historico_Completo' : selectedDate;
-                const defaultFilename = `Reporte_Ganancias_${filenameDate}.pdf`;
-
-                try {
-                    const res = await storage.savePDF({ defaultFilename });
-                    if (res && res.success) {
-                        setSaveStatus({ success: true, msg: `PDF guardado exitosamente en: ${res.filePath}` });
-                    } else if (res && res.canceled) {
-                        setSaveStatus(null);
-                    } else if (res && res.error) {
-                        setSaveStatus({ success: false, msg: `Error: ${res.error}` });
-                    }
-                } catch (err) {
-                    console.error("Error al exportar PDF:", err);
-                    setSaveStatus({ success: false, msg: `Error al generar PDF: ${err.message || err}` });
-                } finally {
-                    setIsSaving(false);
-                }
+            return {
+                granTotalRecaudado,
+                totalPizzasDinero,
+                totalPizzasCantidad,
+                totalEmpanadasDinero,
+                totalEmpanadasCantidad,
+                countedOrders,
+                excludedOrders
             };
+        };
+
+        // --- MODAL DETALLE DE TOTAL RECAUDADO (SERIO, CELESTITO, SIN EMOJIS) ---
+        const CashDetailModal = ({ isOpen, onClose, orders, history, prices }) => {
+            if (!isOpen) return null;
+
+            const totals = calculateTakeawayTotals(orders, history, prices);
 
             return (
-                <div id="report-modal-wrapper" className="fixed inset-0 bg-black/85 z-[9990] flex flex-col items-center justify-start p-2 sm:p-4 overflow-y-auto print:static print:bg-white print:p-0 print:m-0 print:overflow-visible">
-                    {/* BARRA SUPERIOR DE CONTROL */}
-                    <div className="sticky top-2 z-[9999] w-full max-w-[210mm] bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-white no-print">
-                        {/* SELECTOR DE FECHA */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5 uppercase tracking-wide">
-                                <Calendar size={16} className="text-yellow-400" /> Fecha:
-                            </span>
-                            <input
-                                type="date"
-                                value={selectedDate === 'all' ? '' : selectedDate}
-                                onChange={e => setSelectedDate(e.target.value || todayStr)}
-                                className="bg-slate-900 border border-slate-600 rounded-lg px-2.5 py-1 text-sm font-bold text-white focus:outline-none focus:border-yellow-400"
-                            />
-                            <button
-                                onClick={() => setSelectedDate(todayStr)}
-                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate === todayStr ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
-                            >
-                                Hoy
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const y = new Date();
-                                    y.setDate(y.getDate() - 1);
-                                    setSelectedDate(getLocalDateString(y));
-                                }}
-                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate !== todayStr && selectedDate !== 'all' ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
-                            >
-                                Ayer
-                            </button>
-                            <button
-                                onClick={() => setSelectedDate('all')}
-                                className={`text-xs px-2.5 py-1 rounded-md font-bold transition ${selectedDate === 'all' ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 hover:bg-slate-600 text-gray-200'}`}
-                            >
-                                Todas
-                            </button>
-                        </div>
-
-                        {/* BOTONES */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleSavePDF}
-                                disabled={isSaving}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-sm shadow-xl flex items-center gap-2 border border-emerald-400/50 hover:scale-105 transition disabled:opacity-50"
-                            >
-                                <Download size={16} /> {isSaving ? 'GENERANDO PDF...' : 'GUARDAR COMO PDF'}
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-1 border border-slate-500 transition"
-                            >
-                                <X size={16} /> Cerrar
-                            </button>
-                        </div>
-
-                        {saveStatus && (
-                            <div className={`w-full p-2 rounded text-xs font-bold flex items-center gap-2 ${saveStatus.success ? 'bg-emerald-950 text-emerald-300 border border-emerald-500' : 'bg-red-950 text-red-300 border border-red-500'}`}>
-                                {saveStatus.success ? <Check size={16} /> : <AlertTriangle size={16} />}
-                                <span>{saveStatus.msg}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* HOJA DE REPORTE A4 VERTICAL */}
-                    <div
-                        id="report-print-container"
-                        className="bg-white text-gray-900 w-full max-w-[210mm] min-h-[297mm] p-6 sm:p-8 md:p-10 shadow-2xl my-auto rounded-lg print:rounded-none print:shadow-none print:p-0 print:m-0 print:max-w-none text-xs sm:text-sm font-sans"
-                    >
-                        {/* 1. ENCABEZADO */}
-                        <div className="border-b-2 border-slate-900 pb-4 mb-5 flex justify-between items-start">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9990] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+                    <div className="bg-white border-2 border-sky-300 text-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* HEADER */}
+                        <div className="bg-sky-100/70 p-4 border-b border-sky-200 flex justify-between items-center shrink-0">
                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="bg-slate-900 text-yellow-400 p-1.5 rounded font-black text-base flex items-center gap-1">
-                                        <Pizza size={20} /> CLUB DE BOCHAS
-                                    </div>
-                                    <span className="text-xl font-black tracking-tight text-slate-900">SISTEMA RIVERA</span>
-                                </div>
-                                <h1 className="text-lg font-black text-slate-800 uppercase tracking-wide">
-                                    Informe de Ventas y Balance de Ganancias
-                                </h1>
-                                <p className="text-[11px] text-gray-500">
-                                    Control de Caja Oficial • Período: <strong className="text-slate-800">{displayDateFormatted}</strong>
+                                <h2 className="text-lg sm:text-xl font-bold text-sky-950 flex items-center gap-2">
+                                    <DollarSign size={22} className="text-sky-700" /> Detalle de Recaudación en Caja
+                                </h2>
+                                <p className="text-xs text-slate-600 mt-0.5">
+                                    Pizzas y empanadas con nombre de cliente (mostrador / delivery)
                                 </p>
                             </div>
-                            <div className="text-right border-l border-gray-300 pl-4 py-1">
-                                <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fecha del Reporte</div>
-                                <div className="font-bold text-slate-800 text-sm font-mono">{displayDateFormatted}</div>
-                                <div className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1 border border-emerald-200">
-                                    {selectedDate === todayStr ? 'Caja del Día' : 'Cierre Histórico'}
-                                </div>
+                            <button onClick={onClose} className="p-1.5 rounded-lg bg-sky-200/60 hover:bg-sky-200 text-slate-700 hover:text-slate-900 transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* CARDS RESUMEN */}
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-sky-100 bg-sky-50/50 shrink-0">
+                            <div className="bg-white border border-sky-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wide">Total Recaudado</span>
+                                <span className="text-2xl font-black text-sky-900 mt-1">${totals.granTotalRecaudado.toLocaleString()}</span>
+                                <span className="text-[10px] text-slate-500 font-medium">Pizzas + empanadas con nombre</span>
+                            </div>
+                            <div className="bg-white border border-sky-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1"><Pizza size={14} className="text-sky-600" /> Pizzas para llevar</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">${totals.totalPizzasDinero.toLocaleString()}</span>
+                                <span className="text-[10px] text-slate-500 font-medium">{totals.totalPizzasCantidad} pizzas registradas</span>
+                            </div>
+                            <div className="bg-white border border-sky-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1"><Utensils size={14} className="text-sky-600" /> Empanadas para llevar</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">${totals.totalEmpanadasDinero.toLocaleString()}</span>
+                                <span className="text-[10px] text-slate-500 font-medium">{totals.totalEmpanadasCantidad} empanadas registradas</span>
                             </div>
                         </div>
 
-                        {/* 2. RESUMEN EJECUTIVO (KPI CARDS) */}
-                        <div className="report-section mb-6">
-                            <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <DollarSign size={14} className="text-emerald-600" /> Resumen Financiero Consolidado
-                            </h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                <div className="bg-emerald-50 border border-emerald-300 p-3 rounded-lg flex flex-col justify-between">
-                                    <div className="text-[10px] font-black text-emerald-800 uppercase">Total Recaudado (Cerrado)</div>
-                                    <div className="text-2xl font-black text-emerald-700 mt-1">${granTotalRecaudado.toLocaleString()}</div>
-                                    <div className="text-[9px] text-emerald-600 font-semibold">{completedCarta.length} pedidos + {closedLibres.length} mesas</div>
-                                </div>
-
-                                <div className="bg-purple-50 border border-purple-300 p-3 rounded-lg flex flex-col justify-between">
-                                    <div className="text-[10px] font-black text-purple-800 uppercase">Mesas Libres (Total)</div>
-                                    <div className="text-2xl font-black text-purple-700 mt-1">${granTotalLibres.toLocaleString()}</div>
-                                    <div className="text-[9px] text-purple-600 font-semibold">{granTotalPersonasLibres} personas ({closedLibres.length} cerradas{displayActiveLibres.length > 0 ? `, ${displayActiveLibres.length} activas` : ''})</div>
-                                </div>
-
-                                <div className="bg-blue-50 border border-blue-300 p-3 rounded-lg flex flex-col justify-between">
-                                    <div className="text-[10px] font-black text-blue-800 uppercase">A La Carta (Total)</div>
-                                    <div className="text-2xl font-black text-blue-700 mt-1">${totalCarta.toLocaleString()}</div>
-                                    <div className="text-[9px] text-blue-600 font-semibold">{completedCarta.length} pedidos despachados</div>
-                                </div>
-
-                                <div className="bg-amber-50 border border-amber-300 p-3 rounded-lg flex flex-col justify-between">
-                                    <div className="text-[10px] font-black text-amber-800 uppercase">Gran Total Balance</div>
-                                    <div className="text-2xl font-black text-amber-800 mt-1">${granTotalConActivos.toLocaleString()}</div>
-                                    <div className="text-[9px] text-amber-700 font-semibold">{isViewingToday ? 'Incluye mesas activas' : 'Cierre final'}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. PARÁMETROS DE TARIFAS */}
-                        <div className="report-section mb-6 border border-gray-200 rounded-lg p-3 bg-gray-50/50">
-                            <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <Settings size={14} className="text-slate-600" /> Parámetros y Tarifas Aplicadas
-                            </h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                                <div className="bg-white p-2 rounded border border-gray-200">
-                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Mesa Libre p/Pers:</span>
-                                    <span className="font-black text-purple-700 text-sm">${(prices.pizzaLibreH || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="bg-white p-2 rounded border border-gray-200">
-                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Empanada Unit:</span>
-                                    <span className="font-black text-yellow-700 text-sm">${(prices.empanada || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="bg-white p-2 rounded border border-gray-200">
-                                    <span className="text-[10px] text-gray-500 font-bold block">Precio Caja de Pizza:</span>
-                                    <span className="font-black text-blue-700 text-sm">${(prices.box || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="bg-white p-2 rounded border border-gray-200">
-                                    <span className="text-[10px] text-gray-500 font-bold block">Gustos Configurados:</span>
-                                    <span className="font-black text-slate-800 text-sm">{Object.keys(prices.flavors || {}).length} gustos</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 4. DETALLE MESAS LIBRES */}
-                        <div className="report-section mb-6">
-                            <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-xs font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Users size={14} className="text-purple-700" /> Detalle de Mesas Libres (Por Persona)
-                                </h2>
-                                <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
-                                    Subtotal Libres: ${granTotalLibres.toLocaleString()}
-                                </span>
-                            </div>
-
-                            {closedLibres.length === 0 && displayActiveLibres.length === 0 ? (
-                                <div className="text-center py-4 bg-gray-50 border rounded text-gray-400 italic text-xs">
-                                    No se registraron mesas libres en la fecha seleccionada ({displayDateFormatted}).
-                                </div>
-                            ) : (
-                                <div className="border border-gray-300 rounded overflow-hidden">
-                                    <table className="w-full text-left border-collapse text-xs">
-                                        <thead>
-                                            <tr className="bg-purple-900 text-white font-bold text-[11px]">
-                                                <th className="p-2">#</th>
-                                                <th className="p-2">Mesa / Cliente</th>
-                                                <th className="p-2 text-center">Horario</th>
-                                                <th className="p-2 text-center">Comensales</th>
-                                                <th className="p-2 text-center">Rondas</th>
-                                                <th className="p-2 text-right">Precio p/Pers.</th>
-                                                <th className="p-2 text-right">Total ($)</th>
-                                                <th className="p-2 text-center">Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {closedLibres.map((l, idx) => {
-                                                const p = Number(l.people) || 0;
-                                                const pr = Number(l.pricePerPerson) || Number(prices.pizzaLibreH) || 0;
-                                                const tot = l.totalPrice != null && !isNaN(Number(l.totalPrice)) ? Number(l.totalPrice) : (p * pr);
-                                                return (
-                                                    <tr key={`cl-${l.id || idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-purple-50/40"}>
-                                                        <td className="p-2 font-mono text-gray-500 font-bold">{idx + 1}</td>
-                                                        <td className="p-2 font-bold text-gray-900">{l.client} {l.obs && <span className="text-gray-500 font-normal italic text-[10px]">({l.obs})</span>}</td>
-                                                        <td className="p-2 text-center font-mono text-gray-600">{l.timestamp || '--'} {l.closedAt ? `a ${l.closedAt}` : ''}</td>
-                                                        <td className="p-2 text-center font-bold text-purple-900">{p} pers.</td>
-                                                        <td className="p-2 text-center font-bold">{l.round || 1}ª</td>
-                                                        <td className="p-2 text-right font-mono">${pr.toLocaleString()}</td>
-                                                        <td className="p-2 text-right font-black text-purple-700">${tot.toLocaleString()}</td>
-                                                        <td className="p-2 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-1.5 py-0.5 rounded">Cobrada</span></td>
-                                                    </tr>
-                                                );
-                                            })}
-
-                                            {displayActiveLibres.map((l, idx) => {
-                                                const p = Number(l.people) || 0;
-                                                const pr = Number(prices.pizzaLibreH) || 0;
-                                                const tot = p * pr;
-                                                return (
-                                                    <tr key={`al-${l.id || idx}`} className="bg-amber-50/60 border-t border-amber-200">
-                                                        <td className="p-2 font-mono text-amber-700 font-bold">{closedLibres.length + idx + 1}</td>
-                                                        <td className="p-2 font-bold text-amber-900">{l.client} <span className="text-amber-700 text-[10px] font-bold">(En curso)</span></td>
-                                                        <td className="p-2 text-center font-mono text-gray-600">{l.timestamp || '--'}</td>
-                                                        <td className="p-2 text-center font-bold text-amber-900">{p} pers.</td>
-                                                        <td className="p-2 text-center font-bold">{l.round || 1}ª</td>
-                                                        <td className="p-2 text-right font-mono">${pr.toLocaleString()}</td>
-                                                        <td className="p-2 text-right font-black text-amber-800">${tot.toLocaleString()}</td>
-                                                        <td className="p-2 text-center"><span className="bg-amber-200 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded">En Curso</span></td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr className="bg-purple-100 font-black border-t-2 border-purple-300 text-purple-950">
-                                                <td colSpan="3" className="p-2 uppercase">Total Mesas Libres:</td>
-                                                <td className="p-2 text-center">{granTotalPersonasLibres} pers.</td>
-                                                <td colSpan="2" className="p-2"></td>
-                                                <td className="p-2 text-right text-sm text-purple-900">${granTotalLibres.toLocaleString()}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 5. DETALLE PEDIDOS A LA CARTA */}
-                        <div className="report-section mb-6">
-                            <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Utensils size={14} className="text-blue-700" /> Detalle de Pedidos A La Carta
-                                </h2>
-                                <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
-                                    Subtotal Carta: ${totalCarta.toLocaleString()}
-                                </span>
-                            </div>
-
-                            {completedCarta.length === 0 ? (
-                                <div className="text-center py-4 bg-gray-50 border rounded text-gray-400 italic text-xs">
-                                    No hay pedidos a la carta registrados en la fecha seleccionada ({displayDateFormatted}).
-                                </div>
-                            ) : (
-                                <div className="border border-gray-300 rounded overflow-hidden">
-                                    <table className="w-full text-left border-collapse text-xs">
-                                        <thead>
-                                            <tr className="bg-slate-800 text-white font-bold text-[11px]">
-                                                <th className="p-2">#</th>
-                                                <th className="p-2 text-center">Hora</th>
-                                                <th className="p-2">Cliente / Pedido</th>
-                                                <th className="p-2">Detalle Pizzas</th>
-                                                <th className="p-2 text-center">Empanadas</th>
-                                                <th className="p-2">Bebidas</th>
-                                                <th className="p-2 text-right">Total ($)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {completedCarta.map((o, idx) => (
-                                                <tr key={`cc-${o.id || idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                                                    <td className="p-2 font-mono text-gray-500 font-bold">{idx + 1}</td>
-                                                    <td className="p-2 text-center font-mono text-gray-600 whitespace-nowrap">{o.timestamp || '--'}</td>
-                                                    <td className="p-2 font-bold text-gray-900">{o.client}</td>
-                                                    <td className="p-2">
-                                                        {Array.isArray(o.pizzas) && o.pizzas.length > 0 ? (
-                                                            <div className="space-y-0.5">
-                                                                {o.pizzas.map((p, i) => (
-                                                                    <div key={i} className="leading-tight text-[11px]">
-                                                                        <span className="font-bold text-gray-800">{p.qty}x</span> {p.description} {p.withBox && <span className="text-blue-600 font-bold text-[10px]">📦</span>}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-gray-400 italic text-[11px]">-</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-2 text-center font-bold text-yellow-800">
-                                                        {o.empanadas > 0 ? `${o.empanadas} u.` : '-'}
-                                                    </td>
-                                                    <td className="p-2">
-                                                        {Array.isArray(o.drinks) && o.drinks.length > 0 ? (
-                                                            <div className="space-y-0.5">
-                                                                {o.drinks.map((d, i) => (
-                                                                    <div key={i} className="leading-tight text-blue-800 text-[11px]">
-                                                                        <span className="font-bold">{d.qty}x</span> {d.name}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-gray-400 italic text-[11px]">-</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-2 text-right font-black text-emerald-700 text-sm">
-                                                        ${(o.totalPrice || 0).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr className="bg-slate-100 font-black border-t-2 border-slate-300 text-slate-900">
-                                                <td colSpan="3" className="p-2 uppercase">Total Pedidos Carta:</td>
-                                                <td className="p-2 text-[11px] font-bold">{totalPizzasEnteras} enteras, {totalPizzasMedias} medias</td>
-                                                <td className="p-2 text-center text-yellow-900">{empanadasVendidas > 0 ? `${empanadasVendidas} u.` : '-'}</td>
-                                                <td className="p-2 text-[11px] text-blue-900">{totalBebidasUnidades > 0 ? `${totalBebidasUnidades} u.` : '-'}</td>
-                                                <td className="p-2 text-right text-sm text-emerald-800">${totalCarta.toLocaleString()}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 6. ESTADÍSTICAS POR PRODUCTO */}
-                        <div className="report-section mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="border border-blue-200 rounded p-3 bg-blue-50/30">
-                                <h3 className="text-xs font-black text-blue-900 uppercase tracking-wide mb-2 flex items-center justify-between">
-                                    <span>🥤 Bebidas Vendidas</span>
-                                    <span className="text-[11px] font-bold text-blue-700">${totalBebidasMonto.toLocaleString()}</span>
+                        {/* LISTADO DE PEDIDOS */}
+                        <div className="p-4 overflow-y-auto flex-1 space-y-4 text-xs">
+                            <div>
+                                <h3 className="font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                    <span>Pedidos computados ({totals.countedOrders.length})</span>
+                                    <span className="text-sky-800 font-mono font-bold">${totals.granTotalRecaudado.toLocaleString()}</span>
                                 </h3>
-                                {Object.keys(bebidasStats).length === 0 ? (
-                                    <div className="text-gray-400 italic text-[11px]">Sin ventas de bebidas registradas.</div>
+                                {totals.countedOrders.length === 0 ? (
+                                    <div className="text-center py-6 text-slate-400 italic bg-slate-50 rounded-lg border border-slate-200">
+                                        No hay pedidos con nombre registrados en la caja actual.
+                                    </div>
                                 ) : (
-                                    <table className="w-full text-left text-xs border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-blue-200 text-gray-500 text-[10px]">
-                                                <th className="pb-1">Bebida</th>
-                                                <th className="pb-1 text-center">Cant.</th>
-                                                <th className="pb-1 text-right">P. Unit</th>
-                                                <th className="pb-1 text-right">Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Object.entries(bebidasStats).map(([name, stat]) => (
-                                                <tr key={name} className="border-b border-blue-100 last:border-0">
-                                                    <td className="py-1 font-bold text-gray-800">{name}</td>
-                                                    <td className="py-1 text-center font-bold text-blue-900">{stat.qty}</td>
-                                                    <td className="py-1 text-right font-mono">${stat.unitPrice.toLocaleString()}</td>
-                                                    <td className="py-1 text-right font-black text-blue-900">${stat.total.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-
-                            <div className="border border-orange-200 rounded p-3 bg-orange-50/30">
-                                <h3 className="text-xs font-black text-orange-900 uppercase tracking-wide mb-2 flex items-center justify-between">
-                                    <span>🍕 Gustos de Pizza Pedidos</span>
-                                    <span className="text-[11px] font-bold text-orange-700">{totalPizzasEnteras + totalPizzasMedias} pizzas</span>
-                                </h3>
-                                {Object.keys(pizzaFlavorsStats).length === 0 ? (
-                                    <div className="text-gray-400 italic text-[11px]">Sin pizzas a la carta registradas.</div>
-                                ) : (
-                                    <div className="space-y-1 text-xs">
-                                        {Object.entries(pizzaFlavorsStats)
-                                            .sort((a, b) => b[1] - a[1])
-                                            .map(([flavor, count]) => (
-                                                <div key={flavor} className="flex justify-between items-center py-0.5 border-b border-orange-100 last:border-0">
-                                                    <span className="font-semibold text-gray-800">{flavor}</span>
-                                                    <span className="font-bold text-orange-900 font-mono">
-                                                        {Number.isInteger(count) ? `${count}x` : `${Number(count.toFixed(1))}x`}
-                                                    </span>
+                                    <div className="space-y-1.5">
+                                        {totals.countedOrders.map(o => (
+                                            <div key={o.id} className="bg-white border border-slate-200 p-2.5 rounded-lg flex justify-between items-center shadow-sm">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-slate-900 text-sm">{o.client}</span>
+                                                        <span className="text-[10px] font-mono text-slate-500">{o.timestamp}</span>
+                                                    </div>
+                                                    <div className="text-slate-600 text-[11px] mt-0.5">
+                                                        {o.pizzasQty > 0 && <span className="mr-2">Pizza: {o.pizzasDesc || `${o.pizzasQty}x`} (${o.pizzasMonto.toLocaleString()})</span>}
+                                                        {o.empanadasQty > 0 && <span>Empanadas: {o.empanadasQty}x (${o.empanadasMonto.toLocaleString()})</span>}
+                                                    </div>
                                                 </div>
-                                            ))}
+                                                <div className="text-right">
+                                                    <span className="font-black text-sky-800 text-sm font-mono">${o.subtotal.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
+
+                            {totals.excludedOrders.length > 0 && (
+                                <div className="pt-2 border-t border-slate-200">
+                                    <h3 className="font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between text-[11px]">
+                                        <span>Mesas no computadas ({totals.excludedOrders.length} para comer en salón)</span>
+                                        <span className="text-slate-400 font-normal">Identificadas por número de mesa</span>
+                                    </h3>
+                                    <div className="space-y-1">
+                                        {totals.excludedOrders.map(o => (
+                                            <div key={o.id} className="bg-slate-50 border border-slate-200 p-2 rounded flex justify-between items-center text-slate-600">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-slate-800">Mesa/Nº {o.client}</span>
+                                                    <span className="text-[10px] font-mono text-slate-400">{o.timestamp}</span>
+                                                    <span className="text-[10px] italic">({o.pizzasQty > 0 ? `${o.pizzasQty} pizzas` : ''}{o.empanadasQty > 0 ? `, ${o.empanadasQty} empanadas` : ''})</span>
+                                                </div>
+                                                <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-medium">Consumo en salón</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* 7. FIRMA Y CIERRE */}
-                        <div className="report-section pt-6 mt-6 border-t-2 border-slate-800 flex justify-between items-end text-xs">
-                            <div>
-                                <div className="font-bold text-gray-800">Sistema Rivera - Control de Caja</div>
-                                <div className="text-[10px] text-gray-500">Reporte emitido conforme por el sistema de recepción</div>
-                            </div>
-                            <div className="text-center w-48 border-t border-gray-400 pt-1">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Firma Responsable / Turno</span>
-                            </div>
+                        {/* FOOTER */}
+                        <div className="p-3 bg-sky-50 border-t border-sky-200 flex justify-end shrink-0">
+                            <button onClick={onClose} className="bg-sky-700 hover:bg-sky-800 text-white px-5 py-2 rounded-xl font-bold transition text-sm">
+                                Cerrar
+                            </button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- PANTALLA DE INICIO (LANDING) ---
-        const Landing = ({ setView, showConfirm, onOpenReport, history, activeLibres, orders, prices }) => {
+        // --- PANTALLA DE INICIO (LANDING) - CELESTITO, RESPONSIVE, SIN EMOJIS, CAJA INTEGRADA ---
+        const Landing = ({ setView, showConfirm, onOpenCashDetail, history, activeLibres, orders, prices }) => {
             const [cleared, setCleared] = useState(false);
+            const [confirmingClose, setConfirmingClose] = useState(false);
+            const [showDetails, setShowDetails] = useState(false);
 
-            const handleClear = async () => {
-                showConfirm('🚨 ¿Seguro que quieres CERRAR CAJA? Se vaciarán pedidos y mesas activas (el historial de ventas y los precios se mantienen seguros).', async () => {
-                    await storage.clearAll();
-                    setCleared(true);
-                    setTimeout(() => setCleared(false), 3000);
-                });
+            const totals = useMemo(() => calculateTakeawayTotals(orders, history, prices), [orders, history, prices]);
+
+            const handleExecuteClose = async () => {
+                await storage.clearAll();
+                setConfirmingClose(false);
+                setCleared(true);
+                setTimeout(() => setCleared(false), 3000);
             };
 
-            const totalRecaudadoHoy = useMemo(() => {
-                const todayStr = getLocalDateString(new Date());
-                const totalCarta = history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : 0), 0);
-                const totalLibres = history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((s, o) => s + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0);
-                return totalCarta + totalLibres;
-            }, [history, prices.pizzaLibreH]);
-
             return (
-                <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-8 select-none relative">
-                    <img src="./FOTO.PNG" alt="Logo" className="w-48 h-auto mb-6 rounded-2xl shadow-2xl" onError={(e) => e.target.style.display = 'none'} />
-                    <h1 className="text-5xl font-black mb-2 text-yellow-400 flex items-center gap-4"><Pizza /> Sistema Rivera </h1>
-                    <p className="text-gray-400 mb-6 font-medium text-sm">Gestión de Pedidos, Mesas Libres y Guardado de Informes PDF</p>
+                <div className="min-h-screen w-full bg-gradient-to-br from-sky-100 via-sky-50 to-blue-50 text-slate-800 flex flex-col justify-center items-center py-6 px-4 sm:px-6 select-none overflow-y-auto">
+                    <div className="w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-5 my-auto">
+                        {/* LOGO & TÍTULO */}
+                        <div className="flex flex-col items-center text-center">
+                            <img src="./FOTO.PNG" alt="Logo" className="h-16 sm:h-20 w-auto mb-2 rounded-xl shadow-sm border border-white/80 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 flex items-center gap-2">
+                                <Pizza size={28} className="text-sky-600" /> Sistema Rivera
+                            </h1>
+                            <p className="text-slate-500 font-medium text-xs sm:text-sm mt-0.5">Control de Pedidos, Salón y Caja</p>
+                        </div>
 
-                    <div className="flex gap-8 mt-2">
-                        <button onClick={() => setView('reception')} className="bg-white text-slate-800 w-56 h-56 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-3 border-4 border-transparent hover:border-blue-500">
-                            <User size={54} className="text-blue-600" /><span className="text-xl font-bold">RECEPCIÓN</span>
-                        </button>
-                        <button onClick={() => setView('kitchen')} className="bg-slate-800 text-white w-56 h-56 rounded-2xl shadow-2xl hover:scale-105 transition flex flex-col items-center justify-center gap-3 border border-slate-700 hover:border-red-500">
-                            <ChefHat size={54} className="text-red-500" /><span className="text-xl font-bold">COCINA</span>
-                        </button>
-                    </div>
+                        {/* SELECTOR DE PANTALLA (RECEPCIÓN / COCINA) */}
+                        <div className="grid grid-cols-2 gap-3 sm:gap-5 w-full max-w-md sm:max-w-lg">
+                            <button
+                                onClick={() => setView('reception')}
+                                className="bg-white hover:bg-sky-50/80 text-slate-800 rounded-2xl shadow-sm hover:shadow-md border-2 border-sky-200 hover:border-sky-500 p-4 sm:p-5 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer text-center"
+                            >
+                                <div className="p-2 rounded-full bg-sky-100/70 text-sky-600 group-hover:scale-110 transition">
+                                    <User size={34} />
+                                </div>
+                                <span className="text-base sm:text-lg font-bold text-slate-800">RECEPCIÓN</span>
+                                <span className="text-[11px] text-slate-400 font-medium">Pedidos y Mesas</span>
+                            </button>
 
-                    <div className="mt-8 flex items-center gap-4">
-                        <button
-                            onClick={onOpenReport}
-                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-xl transition hover:scale-105 border border-emerald-400/50"
-                        >
-                            <FileText size={20} /> INFORME DE CAJA EN PDF (${totalRecaudadoHoy.toLocaleString()})
-                        </button>
+                            <button
+                                onClick={() => setView('kitchen')}
+                                className="bg-white hover:bg-orange-50/80 text-slate-800 rounded-2xl shadow-sm hover:shadow-md border-2 border-sky-200 hover:border-orange-400 p-4 sm:p-5 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer text-center"
+                            >
+                                <div className="p-2 rounded-full bg-orange-100/70 text-orange-600 group-hover:scale-110 transition">
+                                    <ChefHat size={34} />
+                                </div>
+                                <span className="text-base sm:text-lg font-bold text-slate-800">COCINA</span>
+                                <span className="text-[11px] text-slate-400 font-medium">Horno y Comandas</span>
+                            </button>
+                        </div>
 
+                        {/* ABRIR OTRA PANTALLA (SI APLICA) */}
                         {storage.openNewWindow && (
-                            <button onClick={() => storage.openNewWindow()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-bold shadow-lg transition hover:scale-105">
-                                <Monitor size={20} /> ABRIR OTRA PANTALLA
+                            <button
+                                onClick={() => storage.openNewWindow()}
+                                className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition"
+                            >
+                                <Monitor size={16} /> Abrir otra pantalla
                             </button>
                         )}
-                    </div>
 
-                    <button onClick={handleClear} disabled={cleared} className={`absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow-lg transition ${cleared ? 'bg-green-600 text-white' : 'bg-red-600/80 hover:bg-red-600 text-white'}`}>
-                        {cleared ? <Check size={24} /> : <Trash2 size={24} />}
-                        {cleared ? 'CAJA CERRADA' : 'CERRAR CAJA'}
-                    </button>
+                        {/* PANEL DE CONTROL DE CAJA DEL TURNO (INTEGRADO, DIRECTO, SIN PASOS EXTRA) */}
+                        <div className="w-full max-w-md sm:max-w-lg bg-white border-2 border-sky-300 rounded-2xl p-4 sm:p-5 shadow-md flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider block">
+                                        Total Recaudado (Turno Actual)
+                                    </span>
+                                    <div className="text-3xl sm:text-4xl font-extrabold text-sky-950 font-mono tracking-tight mt-0.5">
+                                        ${totals.granTotalRecaudado.toLocaleString()}
+                                    </div>
+                                    <div className="text-xs text-slate-600 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                                        <span>Pizzas: <strong>{totals.totalPizzasCantidad}</strong> (${totals.totalPizzasDinero.toLocaleString()})</span>
+                                        <span>Empanadas: <strong>{totals.totalEmpanadasCantidad}</strong> (${totals.totalEmpanadasDinero.toLocaleString()})</span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-1">
+                                        Calculado sobre clientes con nombre. Mesas de salón no incluidas.
+                                    </div>
+                                </div>
+
+                                {!confirmingClose && (
+                                    <button
+                                        onClick={() => setConfirmingClose(true)}
+                                        disabled={cleared}
+                                        className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition ${cleared ? 'bg-emerald-600 text-white' : 'bg-slate-800 hover:bg-slate-900 text-white'}`}
+                                    >
+                                        {cleared ? <Check size={14} /> : <Trash2 size={14} />}
+                                        {cleared ? 'Caja Cerrada' : 'Cerrar Caja'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* CONFIRMACIÓN INLINE DE CIERRE DE CAJA */}
+                            {confirmingClose && (
+                                <div className="bg-sky-50 border border-sky-300 p-3 rounded-xl flex flex-col gap-2">
+                                    <div className="flex items-center gap-2 text-sky-950 font-bold text-xs">
+                                        <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+                                        <span>¿Confirmar cierre de caja por ${totals.granTotalRecaudado.toLocaleString()}?</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-600">
+                                        Se guardará un respaldo de seguridad y la caja se reiniciará a $0 para el próximo turno.
+                                    </p>
+                                    <div className="flex gap-2 mt-1">
+                                        <button
+                                            onClick={handleExecuteClose}
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-xs shadow-sm transition"
+                                        >
+                                            Sí, cerrar caja
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmingClose(false)}
+                                            className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-3 rounded-lg text-xs transition"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ACCESO A ÓRDENES COMPUTADAS INLINE */}
+                            <div className="pt-2 border-t border-sky-100 flex justify-between items-center text-xs">
+                                <button
+                                    onClick={() => setShowDetails(!showDetails)}
+                                    className="text-sky-700 hover:text-sky-900 font-semibold underline flex items-center gap-1"
+                                >
+                                    {showDetails ? 'Ocultar órdenes del turno' : `Ver órdenes del turno (${totals.countedOrders.length})`}
+                                </button>
+                                <span className="text-[11px] text-slate-400 font-mono">
+                                    {totals.countedOrders.length} pedidos • {totals.excludedOrders.length} mesas salón
+                                </span>
+                            </div>
+
+                            {/* DETALLE INLINE DE ÓRDENES */}
+                            {showDetails && (
+                                <div className="mt-1 space-y-2 border-t border-slate-100 pt-2 text-xs max-h-48 overflow-y-auto">
+                                    {totals.countedOrders.length === 0 ? (
+                                        <div className="text-center py-3 text-slate-400 italic bg-slate-50 rounded-lg">
+                                            Sin pedidos con nombre en este turno.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {totals.countedOrders.map(o => (
+                                                <div key={o.id} className="bg-sky-50/60 border border-sky-100 p-2 rounded-lg flex justify-between items-center">
+                                                    <div>
+                                                        <span className="font-bold text-slate-900">{o.client}</span>
+                                                        <span className="text-[10px] font-mono text-slate-400 ml-1.5">{o.timestamp}</span>
+                                                        <div className="text-[11px] text-slate-600">
+                                                            {o.pizzasQty > 0 && <span className="mr-2">Pizza: {o.pizzasDesc || `${o.pizzasQty}x`}</span>}
+                                                            {o.empanadasQty > 0 && <span>Empanadas: {o.empanadasQty}x</span>}
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-bold text-sky-800 font-mono">${o.subtotal.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {totals.excludedOrders.length > 0 && (
+                                        <div className="pt-1 text-[11px] text-slate-500">
+                                            <div className="font-bold text-slate-600 mb-1">Mesas salón no computadas:</div>
+                                            <div className="flex flex-wrap gap-1">
+                                                {totals.excludedOrders.map(o => (
+                                                    <span key={o.id} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                                                        Mesa {o.client}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             );
         };
 
         // --- PANTALLA DE RECEPCIÓN ---
-        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert, onOpenReport }) => {
+        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert, onOpenCashDetail }) => {
             const [showPriceConfig, setShowPriceConfig] = useState(false);
             const [localPrices, setLocalPrices] = useState(prices);
+            const totals = useMemo(() => calculateTakeawayTotals(orders, history, prices), [orders, history, prices]);
             const [newFlavorName, setNewFlavorName] = useState('');
             const [newDrinkName, setNewDrinkName] = useState('');
             const [newDrinkPrice, setNewDrinkPrice] = useState('');
             const [isLibre, setIsLibre] = useState(false);
             const [currentPizzas, setCurrentPizzas] = useState([]);
             const [currentDrinks, setCurrentDrinks] = useState([]);
-            const [withBox, setWithBox] = useState(false);
+            const [withBox, setWithBox] = useState(true);
             const [empQtyInput, setEmpQtyInput] = useState('');
             const [peopleQtyInput, setPeopleQtyInput] = useState('');
+            const [clientInput, setClientInput] = useState('');
+            const [destinationOverride, setDestinationOverride] = useState(null);
+
+            const detectedDestination = useMemo(() => {
+                if (destinationOverride) return destinationOverride;
+                if (!clientInput.trim()) return 'llevar';
+                return isTableNumber(clientInput) ? 'salon' : 'llevar';
+            }, [clientInput, destinationOverride]);
 
             const clientNameRef = useRef(null);
             const peopleQtyRef = useRef(null);
@@ -880,6 +731,19 @@
             const [selectedFlavors, setSelectedFlavors] = useState([]);
             const [pizzaTypeUI, setPizzaTypeUI] = useState('entera');
             const pizzaFlavors = Object.keys(prices.flavors || {});
+
+            const prevDestRef = useRef(detectedDestination);
+            useEffect(() => {
+                if (prevDestRef.current !== detectedDestination) {
+                    prevDestRef.current = detectedDestination;
+                    if (detectedDestination === 'llevar') {
+                        setWithBox(true);
+                        setPizzaTypeUI('entera');
+                    } else {
+                        setWithBox(false);
+                    }
+                }
+            }, [detectedDestination]);
 
             const getFlavorMediaPrice = useCallback((flavor) => {
                 const p = prices.flavors?.[flavor];
@@ -956,7 +820,7 @@
                 const rawQty = parseInt(pizzaQtyRef.current?.value, 10);
                 const qty = isNaN(rawQty) || rawQty < 1 ? 1 : rawQty;
                 const obs = obsRef.current?.value || "";
-                const type = pizzaTypeUI;
+                const type = detectedDestination === 'llevar' ? 'entera' : pizzaTypeUI;
 
                 let flavorText = "";
                 if (selectedFlavors.length === 1) {
@@ -993,7 +857,7 @@
                 if (obsRef.current) obsRef.current.value = "";
                 if (pizzaQtyRef.current) pizzaQtyRef.current.value = 1;
                 setPizzaTypeUI('entera');
-                setWithBox(false);
+                setWithBox(detectedDestination === 'llevar');
             };
 
             const addDrinkQuick = (drinkName) => {
@@ -1009,17 +873,17 @@
             };
 
             const submitOrder = () => {
-                const client = clientNameRef.current.value.trim();
+                const client = clientInput.trim();
                 if (!client) return showAlert("Falta ingresar el nombre del cliente o mesa");
 
                 const newId = generateId();
                 const currentDateStr = getLocalDateString(new Date());
 
                 if (isLibre) {
-                    const rawPeople = parseInt(peopleQtyRef.current.value, 10);
+                    const rawPeople = parseInt(peopleQtyRef.current?.value || peopleQtyInput, 10);
                     if (isNaN(rawPeople) || rawPeople <= 0) return showAlert("Ingresá una cantidad de personas válida (mayor a 0)");
                     const people = rawPeople;
-                    const obs = (libreObsRef.current.value || "").trim();
+                    const obs = (libreObsRef.current?.value || "").trim();
 
                     const pricePerPerson = Math.max(0, parseInt(prices.pizzaLibreH, 10) || 0);
                     const tableTotal = people * pricePerPerson;
@@ -1031,6 +895,7 @@
                         pricePerPerson,
                         totalPrice: tableTotal,
                         round: 1,
+                        status: 'cocinando',
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                         date: currentDateStr,
                         obs
@@ -1054,11 +919,11 @@
                         totalPrice: 0
                     }]);
 
-                    peopleQtyRef.current.value = "";
-                    libreObsRef.current.value = "";
+                    if (peopleQtyRef.current) peopleQtyRef.current.value = "";
+                    if (libreObsRef.current) libreObsRef.current.value = "";
                     setPeopleQtyInput('');
                 } else {
-                    const rawEmp = parseInt(empanadasRef.current.value, 10);
+                    const rawEmp = parseInt(empanadasRef.current?.value || empQtyInput, 10);
                     const empQty = isNaN(rawEmp) || rawEmp < 0 ? 0 : rawEmp;
                     if (currentPizzas.length === 0 && empQty === 0 && currentDrinks.length === 0) return showAlert("El pedido está vacío. Agregá al menos una pizza, bebida o empanada");
 
@@ -1067,9 +932,12 @@
                     const empTotal = empQty * Math.max(0, parseInt(prices.empanada, 10) || 0);
                     const total = pizzasTotal + drinksTotal + empTotal;
 
+                    const destination = detectedDestination;
+
                     setOrders([...orders, {
                         id: newId,
                         client,
+                        destination,
                         pizzas: currentPizzas,
                         drinks: currentDrinks,
                         empanadas: empQty,
@@ -1081,18 +949,26 @@
 
                     setCurrentPizzas([]);
                     setCurrentDrinks([]);
-                    empanadasRef.current.value = "";
+                    if (empanadasRef.current) empanadasRef.current.value = "";
                     setEmpQtyInput('');
                 }
-                clientNameRef.current.value = "";
-                clientNameRef.current.focus();
+                setClientInput('');
+                setDestinationOverride(null);
+                setWithBox(true);
+                setPizzaTypeUI('entera');
+                if (clientNameRef.current) {
+                    clientNameRef.current.value = "";
+                    clientNameRef.current.focus();
+                }
             };
 
             const handleRound = useCallback((l) => {
                 const nr = (l.round || 1) + 1;
-                const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr } : x);
+                const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr, status: 'cocinando' } : x);
                 setActiveLibres(updated);
-                setOrders([...orders, {
+                // Retiramos comanda vieja si existiera y enviamos la nueva comanda de la siguiente ronda
+                const cleanOrders = orders.filter(x => x.libreId !== l.id && x.id !== l.id);
+                setOrders([...cleanOrders, {
                     id: generateId(),
                     libreId: l.id,
                     client: l.client,
@@ -1105,8 +981,18 @@
                     people: l.people,
                     round: nr,
                     totalPrice: 0,
-                    obs: l.obs
+                    obs: l.obs || ''
                 }]);
+            }, [activeLibres, orders, setActiveLibres, setOrders]);
+
+            const handleListoLibre = useCallback((l) => {
+                const updated = activeLibres.map(x => x.id === l.id ? {
+                    ...x,
+                    status: 'servida',
+                    lastServedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                } : x);
+                setActiveLibres(updated);
+                setOrders(orders.filter(x => x.libreId !== l.id && x.id !== l.id));
             }, [activeLibres, orders, setActiveLibres, setOrders]);
 
             const handleCloseLibre = useCallback((l) => {
@@ -1115,7 +1001,7 @@
                 const totalTable = people * pricePerPerson;
                 const currentDateStr = getLocalDateString(new Date());
 
-                showConfirm(`¿Cerrar Mesa Libre de ${l.client} (${people} personas - Total: $${totalTable.toLocaleString()})?\nEsto la sumará al reporte y balance de ganancias.`, () => {
+                showConfirm(`¿Dar de baja la mesa "${l.client}" (${people} personas) porque ya terminó de comer?`, () => {
                     const closedEntry = {
                         id: l.id,
                         client: l.client,
@@ -1133,7 +1019,7 @@
 
                     setHistory([...history, closedEntry]);
                     setActiveLibres(activeLibres.filter(x => x.id !== l.id));
-                    setOrders(orders.filter(x => x.libreId !== l.id));
+                    setOrders(orders.filter(x => x.libreId !== l.id && x.id !== l.id));
                 });
             }, [activeLibres, orders, history, prices.pizzaLibreH, setActiveLibres, setOrders, setHistory, showConfirm]);
 
@@ -1230,11 +1116,11 @@
                             </div>
                             <div className="flex gap-2 items-center">
                                 <button
-                                    onClick={onOpenReport}
+                                    onClick={onOpenCashDetail}
                                     className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded-md font-bold flex items-center gap-1 shadow transition"
-                                    title="Ver y Exportar Reporte de Caja en PDF"
+                                    title="Ver Detalle de Caja"
                                 >
-                                    <FileText size={14} /> REPORTE PDF
+                                    <DollarSign size={14} /> CAJA: ${totals.granTotalRecaudado.toLocaleString()}
                                 </button>
                                 <button onClick={() => { setLocalPrices(prices); setShowPriceConfig(true); }} className="text-gray-300 hover:text-white p-1 rounded hover:bg-gray-700" title="Configurar Precios">
                                     <Settings size={18} />
@@ -1243,26 +1129,66 @@
                         </div>
 
                         {/* INPUT CLIENTE / MESA */}
-                        <div className="bg-white p-3 border-b border-gray-200 shrink-0 shadow-sm z-20 space-y-3">
-                            <div className="flex gap-2 items-start">
-                                <div className="flex-1 bg-white rounded shadow-sm border border-gray-200 p-2">
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase">Nombre Cliente / Mesa</label>
-                                    <input ref={clientNameRef} type="text" className="w-full text-xl font-bold text-gray-800 p-1 border-b-2 border-gray-300 outline-none bg-transparent" placeholder="Ej: Mesa 4 / Juan" autoFocus />
+                        <div className="bg-white p-2.5 border-b border-gray-200 shrink-0 shadow-sm z-20 space-y-2">
+                            <div className="flex gap-2 items-center">
+                                <div className="flex-1 bg-white rounded-lg border border-gray-300 p-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 shadow-sm">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase">Cliente o Mesa</label>
+                                        {!isLibre && clientInput.trim() && (
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${detectedDestination === 'llevar' ? 'bg-sky-100 text-sky-800' : 'bg-purple-100 text-purple-800'}`}>
+                                                {detectedDestination === 'llevar' ? 'Para Llevar' : 'Comer'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <input
+                                        ref={clientNameRef}
+                                        type="text"
+                                        value={clientInput}
+                                        onChange={e => { setClientInput(e.target.value); setDestinationOverride(null); }}
+                                        className="w-full text-base font-bold text-gray-800 px-1 py-0.5 outline-none bg-transparent"
+                                        placeholder="Ej: Juan / Mesa 4 / 2"
+                                        autoFocus
+                                    />
                                 </div>
-                                <button onClick={() => setIsLibre(!isLibre)} className={`flex flex-col items-center justify-center px-4 py-2 rounded border h-full transition ${isLibre ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
-                                    <span className="text-xs font-black">{isLibre ? 'MESA LIBRE' : 'A LA CARTA'}</span>
-                                    <Users size={20} />
+
+                                {!isLibre && (
+                                    <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-300 text-xs shrink-0 self-stretch items-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDestinationOverride('llevar')}
+                                            className={`px-2.5 py-1.5 rounded-md font-bold transition text-xs h-full flex items-center ${detectedDestination === 'llevar' ? 'bg-sky-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                                            title="Para llevar (se computa en caja mostrador)"
+                                        >
+                                            Para Llevar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDestinationOverride('salon')}
+                                            className={`px-2.5 py-1.5 rounded-md font-bold transition text-xs h-full flex items-center ${detectedDestination === 'salon' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                                            title="Comer en el lugar (mesa)"
+                                        >
+                                            Comer
+                                        </button>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setIsLibre(!isLibre)}
+                                    className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border transition shrink-0 self-stretch ${isLibre ? 'bg-purple-600 border-purple-700 text-white shadow-sm' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    <span className="text-[10px] font-black">{isLibre ? 'MESA LIBRE' : 'A LA CARTA'}</span>
+                                    <Users size={16} />
                                 </button>
                             </div>
 
                             {isLibre && (
                                 <div className="mt-2 space-y-3">
                                     <div className="flex gap-2">
-                                        <div className="relative">
-                                            <input ref={peopleQtyRef} type="number" placeholder="Cant. Personas" value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-36 p-2 border-2 border-purple-400 rounded text-center font-bold text-lg" />
+                                        <div className="relative shrink-0">
+                                            <input ref={peopleQtyRef} type="number" placeholder="Cant. Pers." value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-28 sm:w-32 p-2 border-2 border-purple-400 rounded text-center font-bold text-base" />
                                             <span className="text-[10px] font-bold text-purple-700 block text-center mt-0.5">(${prices.pizzaLibreH || 0} c/u)</span>
                                         </div>
-                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa (mozo, ubicación, etc)..." className="flex-1 p-2 border-2 border-purple-400 rounded h-[46px]" />
+                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa Libre (mozo, ubicación, etc)..." className="flex-1 p-2 border-2 border-purple-400 rounded h-[46px] text-sm" />
                                     </div>
                                     
                                     <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-5 flex flex-col items-center justify-center text-center space-y-2 text-purple-900 mt-2 shadow-sm">
@@ -1302,7 +1228,14 @@
                                                 </label>
                                                 <div className="flex bg-white rounded border border-gray-300 overflow-hidden text-xs shadow-sm">
                                                     <button onClick={() => setPizzaTypeUI('entera')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'entera' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Entera</button>
-                                                    <button onClick={() => setPizzaTypeUI('mitad')} className={`px-2.5 py-1 font-bold transition ${pizzaTypeUI === 'mitad' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Media</button>
+                                                    <button 
+                                                        onClick={() => { if (detectedDestination !== 'llevar') setPizzaTypeUI('mitad'); }} 
+                                                        disabled={detectedDestination === 'llevar'}
+                                                        className={`px-2.5 py-1 font-bold transition ${detectedDestination === 'llevar' ? 'opacity-40 cursor-not-allowed text-gray-400 bg-gray-100' : (pizzaTypeUI === 'mitad' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100')}`}
+                                                        title={detectedDestination === 'llevar' ? 'Para llevar solo se admiten pizzas enteras' : 'Media pizza'}
+                                                    >
+                                                        Media
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1334,18 +1267,23 @@
                                         </div>
 
                                         <div className="flex gap-2 items-center pt-1 border-t border-orange-200/60">
-                                            <div className="flex-1 bg-white px-2.5 py-1.5 rounded border border-orange-200 text-xs truncate">
+                                            <div className="w-44 sm:w-56 bg-white px-2.5 py-1.5 rounded border border-orange-200 text-xs truncate shrink-0" title="Gustos seleccionados">
                                                 {selectedFlavors.length === 0 ? (
-                                                    <span className="text-gray-400 italic">👉 Tocá 1, 2 o 3 gustos para armar la pizza</span>
+                                                    <span className="text-gray-400 italic">1, 2 o 3 gustos...</span>
                                                 ) : (
-                                                    <span className="font-bold text-orange-900">
-                                                        🍕 {pizzaTypeUI === 'mitad' ? 'Media ' : ''}
+                                                    <span className="font-bold text-orange-900 truncate block">
+                                                        {pizzaTypeUI === 'mitad' ? 'Media ' : ''}
                                                         {selectedFlavors.length === 1 ? selectedFlavors[0] : (selectedFlavors.length === 2 ? selectedFlavors.join(' y ') : `${selectedFlavors.slice(0, -1).join(', ')} y ${selectedFlavors[selectedFlavors.length - 1]}`)}
                                                         <span className="text-green-700 ml-1">(${getPizzaPrice(pizzaTypeUI, selectedFlavors) + (withBox ? (parseInt(prices.box, 10) || 0) : 0)})</span>
                                                     </span>
                                                 )}
                                             </div>
-                                            <input ref={obsRef} type="text" placeholder="Obs..." className="w-24 p-1.5 border rounded text-xs bg-white" />
+                                            <input 
+                                                ref={obsRef} 
+                                                type="text" 
+                                                placeholder="Observación pizza (sin cebolla, dorada, etc)..." 
+                                                className="flex-1 min-w-[120px] p-1.5 border border-gray-300 rounded text-xs bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none" 
+                                            />
                                             <div className="flex items-center gap-1">
                                                 <input ref={pizzaQtyRef} type="number" min="1" defaultValue="1" className="w-12 p-1.5 border rounded text-center font-bold text-xs" />
                                                 <button 
@@ -1396,7 +1334,7 @@
                                         <div key={p.id} className="bg-white p-2 rounded border flex justify-between items-center shadow-sm text-sm">
                                             <div>
                                                 <span className="font-bold text-gray-800 mr-1">{p.qty}x</span> {p.description} 
-                                                {p.withBox && <span className="text-blue-600 font-bold text-xs ml-1">📦</span>} 
+                                                {p.withBox && <span className="text-blue-600 font-bold text-xs ml-1">(Caja)</span>} 
                                                 {p.obs && <span className="text-xs text-orange-600 italic ml-1">({p.obs})</span>}
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -1409,7 +1347,7 @@
                                     ))}
                                     {currentDrinks.map((d) => (
                                         <div key={d.id} className="bg-white p-2 rounded border flex justify-between items-center shadow-sm text-sm">
-                                            <div><span className="font-bold text-blue-800 mr-1">{d.qty}x</span> {d.name} <span className="text-xs text-blue-600 font-bold">🥤</span></div>
+                                            <div><span className="font-bold text-blue-800 mr-1">{d.qty}x</span> {d.name}</div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200">
                                                     ${((d.price || 0) * (d.qty || 1)).toLocaleString()}
@@ -1453,7 +1391,7 @@
                                 <span className="flex items-center gap-1.5"><Users size={16} className="text-purple-600" /> Mesas Libres Activas</span>
                                 <span className="bg-purple-600 text-white px-2.5 py-0.5 rounded-full font-black text-xs">{activeLibres.length}</span>
                             </div>
-                            <ActiveLibresList libres={activeLibres} onRound={handleRound} onClose={handleCloseLibre} />
+                            <ActiveLibresList libres={activeLibres} onRound={handleRound} onListo={handleListoLibre} onClose={handleCloseLibre} />
                         </div>
                     </div>
                 </div>
@@ -1461,166 +1399,266 @@
         };
 
         // --- PANTALLA DE COCINA ---
-        const KitchenView = ({ setView, orders, setOrders, history, setHistory, showConfirm, showAlert, prices, activeLibres, onOpenReport }) => {
+        const KitchenView = ({ setView, orders, setOrders, history, setHistory, showConfirm, showAlert, prices, activeLibres, setActiveLibres, onOpenCashDetail }) => {
             const [zoom, setZoom] = useState(1);
-            const [showTotal, setShowTotal] = useState(false);
 
-            const handleComplete = (o) => {
-                if (o.type === 'libre') {
-                    setOrders(orders.filter(x => x.id !== o.id));
-                    return;
-                }
-                showConfirm(`¿Marcar como completado? Esto sumará $${(o.totalPrice || 0).toLocaleString()} al total registrado.`, () => {
+            const totals = useMemo(() => calculateTakeawayTotals(orders, history, prices), [orders, history, prices]);
+
+            const handleCompleteNormal = (o) => {
+                showConfirm(`¿Marcar pedido de "${o.client}" como listo?`, () => {
                     setHistory([...history, { ...o, date: o.date || getLocalDateString(new Date()), completedAt: new Date().toISOString() }]);
                     setOrders(orders.filter(x => x.id !== o.id));
                 });
             };
 
-            const todayStr = useMemo(() => getLocalDateString(new Date()), []);
-            const totalCartaHoy = useMemo(() => history.filter(o => o.type !== 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : 0), 0), [history, todayStr]);
-            const totalLibresCerradasHoy = useMemo(() => history.filter(o => o.type === 'libre' && (o.date === todayStr || (o.completedAt && o.completedAt.startsWith(todayStr)) || !o.completedAt)).reduce((sum, o) => sum + (o.totalPrice != null && !isNaN(Number(o.totalPrice)) ? Number(o.totalPrice) : ((Number(o.people) || 0) * (Number(prices.pizzaLibreH) || 0))), 0), [history, todayStr, prices.pizzaLibreH]);
-            const totalLibresActivas = useMemo(() => (activeLibres || []).reduce((sum, l) => sum + ((Number(l.people) || 0) * (Number(prices.pizzaLibreH) || 0)), 0), [activeLibres, prices.pizzaLibreH]);
-            const granTotalHoy = totalCartaHoy + totalLibresCerradasHoy + totalLibresActivas;
+            const handleDeleteNormal = (o) => {
+                showConfirm(`¿Eliminar comanda de "${o.client}" sin registrar?`, () => {
+                    setOrders(orders.filter(x => x.id !== o.id));
+                });
+            };
+
+            // 1. Botón "Listo (Ya salió)": retira la comanda de la pantalla de cocina y marca la mesa como servida
+            const handleListoMesa = (o) => {
+                setOrders(orders.filter(x => x.id !== o.id));
+                if (setActiveLibres && activeLibres) {
+                    const updated = activeLibres.map(l => (l.id === o.libreId || l.client === o.client) ? {
+                        ...l,
+                        status: 'servida',
+                        lastServedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    } : l);
+                    setActiveLibres(updated);
+                }
+            };
+
+            // 2. Botón "Siguiente Ronda": avanza de ronda y vuelve a enviar la comanda a la pantalla de cocina
+            const handleSiguienteRonda = (table) => {
+                const nextRound = (table.round || 1) + 1;
+                if (setActiveLibres && activeLibres) {
+                    const updated = activeLibres.map(l => l.id === table.id ? {
+                        ...l,
+                        round: nextRound,
+                        status: 'cocinando'
+                    } : l);
+                    setActiveLibres(updated);
+                }
+                const cleanOrders = orders.filter(x => x.libreId !== table.id && x.id !== table.id);
+                const newOrder = {
+                    id: generateId(),
+                    libreId: table.id,
+                    client: table.client,
+                    pizzas: [],
+                    drinks: [],
+                    empanadas: 0,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    date: getLocalDateString(new Date()),
+                    type: 'libre',
+                    people: table.people,
+                    round: nextRound,
+                    totalPrice: 0,
+                    obs: table.obs || ''
+                };
+                setOrders([...cleanOrders, newOrder]);
+            };
+
+            // 3. Botón "Dar de baja la mesa pq ya comió": retira la mesa definitivamente
+            const handleDarDeBaja = (table) => {
+                showConfirm(`¿Dar de baja la mesa "${table.client}" (${table.people} personas) porque ya terminó de comer?`, () => {
+                    setOrders(orders.filter(x => x.libreId !== table.id && x.id !== table.id));
+                    if (setActiveLibres && activeLibres) {
+                        setActiveLibres(activeLibres.filter(x => x.id !== table.id));
+                    }
+                    const people = parseInt(table.people, 10) || 0;
+                    const pricePerPerson = parseInt(prices.pizzaLibreH, 10) || 0;
+                    setHistory([...history, {
+                        id: table.id,
+                        client: table.client,
+                        type: 'libre',
+                        people,
+                        pricePerPerson,
+                        totalPrice: people * pricePerPerson,
+                        round: table.round,
+                        timestamp: table.timestamp,
+                        date: table.date || getLocalDateString(new Date()),
+                        closedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        completedAt: new Date().toISOString(),
+                        obs: table.obs || ''
+                    }]);
+                });
+            };
 
             return (
                 <div className="bg-black min-h-screen text-white flex flex-col overflow-hidden relative">
-                    {/* MODAL RESUMEN RÁPIDO */}
-                    {showTotal && (
-                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white text-black p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4">
-                                <h2 className="text-xl font-bold flex items-center justify-center gap-2 text-green-700">
-                                    <DollarSign size={24} /> Balance del Día
-                                </h2>
-
-                                <div className="space-y-2 border-y py-3 text-sm">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-600 font-semibold">Total A La Carta:</span>
-                                        <span className="font-bold text-gray-900">${totalCartaHoy.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-purple-700 font-semibold">Mesas Libres Cerradas:</span>
-                                        <span className="font-bold text-purple-800">${totalLibresCerradasHoy.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-amber-700 font-semibold">Mesas Libres Activas:</span>
-                                        <span className="font-bold text-amber-800">${totalLibresActivas.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2 border-t font-black text-lg text-emerald-700">
-                                        <span>Total General:</span>
-                                        <span>${granTotalHoy.toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => { setShowTotal(false); onOpenReport(); }}
-                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 shadow"
-                                    >
-                                        <Download size={16} /> Ver y Guardar PDF
-                                    </button>
-                                    <button
-                                        onClick={() => setShowTotal(false)}
-                                        className="bg-gray-200 hover:bg-gray-300 px-4 py-2.5 rounded-lg font-bold text-gray-700"
-                                    >
-                                        Cerrar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* HEADER DE COCINA */}
-                    <div className="bg-red-800 p-3 flex justify-between items-center shadow-lg border-b-4 border-red-900 z-10">
-                        <h1 className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"><ChefHat size={32} /> COCINA</h1>
+                    <div className="bg-red-800 p-3 flex justify-between items-center shadow-lg border-b-4 border-red-900 z-10 shrink-0">
+                        <h1 className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3">
+                            <ChefHat size={32} /> COCINA
+                        </h1>
                         <div className="flex gap-2 items-center">
-                            <button onClick={() => setShowTotal(true)} className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-bold flex items-center gap-2 shadow">
-                                <DollarSign size={20} /> TOTAL (${granTotalHoy.toLocaleString()})
+                            <button
+                                onClick={onOpenCashDetail}
+                                className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-white font-bold flex items-center gap-2 shadow transition hover:scale-105"
+                                title="Ver detalle de caja (pizzas y empanadas con nombre)"
+                            >
+                                <DollarSign size={20} /> TOTAL CAJA (${totals.granTotalRecaudado.toLocaleString()})
                             </button>
-                            <button onClick={onOpenReport} className="bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded text-white font-bold flex items-center gap-1.5 shadow text-xs" title="Guardar Reporte en PDF">
-                                <FileText size={16} /> REPORTE PDF
-                            </button>
-                            <button onClick={() => setZoom(z => Math.max(0.6, z - 0.1))} className="bg-white/10 p-2 rounded ml-2 hover:bg-white/20"><ZoomOut size={20} /></button>
-                            <button onClick={() => setZoom(z => Math.min(1.6, z + 0.1))} className="bg-white/10 p-2 rounded hover:bg-white/20"><ZoomIn size={20} /></button>
+                            <button onClick={() => setZoom(z => Math.max(0.6, Math.round((z - 0.1) * 10) / 10))} className="bg-white/10 p-2 rounded-lg ml-2 hover:bg-white/20" title="Alejar"><ZoomOut size={20} /></button>
+                            <span className="text-xs font-mono font-bold text-red-200 px-1.5 py-0.5 rounded bg-black/30 border border-white/10">{Math.round(zoom * 100)}%</span>
+                            <button onClick={() => setZoom(z => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))} className="bg-white/10 p-2 rounded-lg hover:bg-white/20" title="Acercar"><ZoomIn size={20} /></button>
                             <button onClick={() => setView('landing')} className="text-xs ml-4 text-red-300 underline self-center hover:text-white">Salir</button>
                         </div>
                     </div>
 
-                    {/* PEDIDOS EN PANTALLA DE COCINA */}
-                    <div className="flex-1 overflow-auto p-4 bg-zinc-900">
+                    {/* PEDIDOS EN PANTALLA DE COCINA (EN PREPARACIÓN) */}
+                    <div className="flex-1 overflow-auto p-4 bg-zinc-900 flex flex-col">
+                        <div className="flex justify-between items-center mb-3">
+                            <h2 className="text-sm font-black text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                <Monitor size={18} className="text-yellow-400" /> Comandas en Preparación
+                                <span className="bg-red-600 text-white text-xs px-2.5 py-0.5 rounded-full font-black">
+                                    {orders.length}
+                                </span>
+                            </h2>
+                            <span className="text-xs text-gray-400">
+                                Vista de comandas para elaboración (se confirma y despacha desde Recepción)
+                            </span>
+                        </div>
+
                         {orders.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center opacity-30">
-                                <ChefHat size={120} />
-                                <h2 className="text-4xl font-bold mt-4">Esperando pedidos...</h2>
+                            <div className="flex-1 flex flex-col items-center justify-center opacity-30 py-16">
+                                <ChefHat size={100} />
+                                <h2 className="text-3xl font-bold mt-3">Sin comandas pendientes en cocina</h2>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start content-start" style={{ zoom: zoom }}>
-                                {orders.map((o) => (
-                                    <div key={o.id} className={`relative rounded-lg overflow-hidden shadow-2xl ${o.type === 'libre' ? 'bg-indigo-900 ring-2 ring-indigo-500' : 'bg-gray-800 ring-1 ring-gray-700'}`}>
-                                        <div className={`p-3 flex justify-between items-start border-b border-white/10 ${o.type === 'libre' ? 'bg-indigo-800' : 'bg-gray-700'}`}>
-                                            <div className="overflow-hidden">
-                                                <h3 className="text-3xl font-black text-yellow-400 truncate leading-none mb-1">{o.client}</h3>
-                                                <div className="flex items-center gap-2 text-gray-300 font-mono text-sm">
-                                                    <span>{o.timestamp}</span>
-                                                    {o.type === 'libre' && <span className="text-indigo-200 font-bold">• MESA LIBRE</span>}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3.5 sm:gap-4 items-start content-start" style={{ zoom: zoom }}>
+                                {orders.map((o) => {
+                                    if (o.type === 'libre') {
+                                        return (
+                                            <div key={o.id} className="relative rounded-2xl overflow-hidden shadow-2xl bg-indigo-950/90 border-2 border-indigo-500 flex flex-col justify-between">
+                                                {/* HEADER COMANDA LIBRE */}
+                                                <div className="p-3 bg-indigo-800 text-white flex justify-between items-start border-b border-indigo-700">
+                                                    <div className="overflow-hidden">
+                                                        <h3 className="text-2xl sm:text-3xl font-black text-yellow-300 truncate leading-none mb-1">{o.client}</h3>
+                                                        <div className="flex items-center gap-2 text-indigo-200 font-mono text-xs">
+                                                            <span>{o.timestamp}</span>
+                                                            <span className="bg-indigo-950 px-2 py-0.5 rounded font-black text-yellow-300 border border-yellow-500/40">
+                                                                {getLibreRoundTitle(o.round)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => handleComplete(o)} className="bg-green-600/50 hover:bg-green-600 text-white px-3 py-2 rounded font-bold flex items-center gap-1" title="Completar">
-                                                    <Check size={20} /> Listo
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 space-y-4">
-                                            {o.type === 'libre' && (
-                                                <div className="bg-indigo-950/50 p-3 rounded border border-indigo-500/50 text-center space-y-2">
-                                                    <div className="text-sm text-indigo-300 uppercase font-bold tracking-widest">{o.round === 1 ? 'PRIMER LIBRE' : `${o.round}ª RONDA`}</div>
-                                                    <div className="text-5xl font-bold text-white flex items-center justify-center gap-2"><Users size={40} /> {o.people}</div>
-                                                </div>
-                                            )}
-                                            {o.obs && (
-                                                <div className="bg-yellow-900/60 p-3 rounded border-l-4 border-yellow-500 flex items-start gap-3">
-                                                    <AlertCircle className="text-yellow-400 shrink-0 mt-1" size={24} />
-                                                    <span className="text-xl font-bold text-yellow-100 uppercase">{o.obs}</span>
-                                                </div>
-                                            )}
-                                            {Array.isArray(o.pizzas) && o.pizzas.length > 0 && (
-                                                <ul className="space-y-3">
-                                                    {o.pizzas.map((p, i) => (
-                                                        <li key={i} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
-                                                            <div className="text-2xl font-bold leading-tight">
-                                                                <span className="text-green-400 inline-block w-8 text-right mr-2">{p.qty}x</span>
-                                                                <span className="text-gray-100">{p.description}</span>
+
+                                                {/* CONTENIDO COMANDA */}
+                                                <div className="p-3 sm:p-4 space-y-2.5">
+                                                    <div className="bg-indigo-900/60 p-3 rounded-xl border border-indigo-400/40 text-center space-y-1.5">
+                                                        <div className="text-xl sm:text-2xl text-yellow-300 uppercase font-black tracking-wider">
+                                                            {getLibreRoundTitle(o.round)}
+                                                        </div>
+                                                        <div className="text-xl sm:text-2xl font-black text-white flex items-center justify-center gap-2 bg-indigo-950/70 py-1 px-3 rounded-lg border border-indigo-400/30 w-fit mx-auto">
+                                                            <Users size={20} className="text-indigo-300" /> {o.people} pers.
+                                                        </div>
+                                                        <div className="text-[11px] text-indigo-300 font-medium">
+                                                            Preparar tandas para la mesa
+                                                        </div>
+                                                    </div>
+
+                                                    {o.obs && (
+                                                        <div className="bg-amber-400 text-amber-950 p-2.5 sm:p-3 rounded-xl border-2 border-yellow-300 font-black shadow-md flex items-start gap-2">
+                                                            <AlertCircle className="text-amber-900 shrink-0 mt-0.5" size={20} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <span className="text-[10px] tracking-wider uppercase block text-amber-900 font-extrabold leading-none mb-0.5">Observación:</span>
+                                                                <span className="text-sm sm:text-base font-black leading-snug break-words">{o.obs}</span>
                                                             </div>
-                                                            {p.obs && (
-                                                                <div className="mt-1 ml-10 bg-yellow-900/50 text-yellow-200 px-2 py-1 rounded text-lg font-bold border border-yellow-700/50 flex items-center gap-2">
-                                                                    <AlertCircle size={18} /> {p.obs}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    // PEDIDOS A LA CARTA
+                                    const isTakeaway = o.destination ? (o.destination === 'llevar') : !isTableNumber(o.client);
+
+                                    return (
+                                        <div key={o.id} className="relative rounded-2xl overflow-hidden shadow-2xl bg-gray-800 border border-gray-700 flex flex-col justify-between">
+                                            <div className={`p-3 flex justify-between items-start border-b ${isTakeaway ? 'bg-sky-950/90 border-sky-800' : 'bg-gray-700 border-gray-600'}`}>
+                                                <div className="overflow-hidden">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 truncate leading-none">{o.client}</h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-gray-300 font-mono text-xs">
+                                                        <span>{o.timestamp}</span>
+                                                        {isTakeaway ? (
+                                                            <span className="bg-sky-600 text-white font-black text-[11px] px-2 py-0.5 rounded shadow">
+                                                                PARA LLEVAR
+                                                            </span>
+                                                        ) : (
+                                                            <span className="bg-purple-600 text-white font-black text-[11px] px-2 py-0.5 rounded shadow">
+                                                                COMER
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-3 sm:p-4 space-y-2.5 flex-1">
+                                                {o.obs && (
+                                                    <div className="bg-amber-400 text-amber-950 p-2.5 sm:p-3 rounded-xl border-2 border-yellow-300 font-black shadow-md flex items-start gap-2">
+                                                        <AlertCircle className="text-amber-900 shrink-0 mt-0.5" size={20} />
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="text-[10px] tracking-wider uppercase block text-amber-900 font-extrabold leading-none mb-0.5">Observación:</span>
+                                                            <span className="text-sm sm:text-base font-black leading-snug break-words">{o.obs}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {Array.isArray(o.pizzas) && o.pizzas.length > 0 && (
+                                                    <ul className="space-y-2.5">
+                                                        {o.pizzas.map((p, i) => (
+                                                            <li key={i} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
+                                                                <div className="text-xl font-bold leading-tight flex items-start justify-between gap-2">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <span className="text-green-400 inline-block w-7 text-right mr-2 shrink-0">{p.qty}x</span>
+                                                                        <span className="text-gray-100">{p.description}</span>
+                                                                    </div>
+                                                                    {p.withBox ? (
+                                                                        <span className="text-[11px] font-black text-sky-200 bg-sky-950 border border-sky-500/60 px-2 py-0.5 rounded shrink-0">
+                                                                            CON CAJA
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[11px] font-semibold text-gray-400 bg-gray-900 border border-gray-700 px-2 py-0.5 rounded shrink-0">
+                                                                            SIN CAJA
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                            {Array.isArray(o.drinks) && o.drinks.length > 0 && (
-                                                <ul className="space-y-3 mt-3">
-                                                    {o.drinks.map((d, i) => (
-                                                        <li key={`d${i}`} className="border-b border-white/10 pb-2 last:border-0 last:pb-0">
-                                                            <div className="text-2xl font-bold leading-tight text-blue-300">
-                                                                <span className="text-blue-400 inline-block w-8 text-right mr-2">{d.qty}x</span>
-                                                                <span className="text-gray-100">{d.name}</span>
-                                                            </div>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                            {o.empanadas > 0 && (
-                                                <div className="bg-yellow-900/30 p-2 rounded border border-yellow-600/30 mt-2 flex items-center gap-3">
-                                                    <span className="text-3xl font-bold text-yellow-400 w-10 text-right">{o.empanadas}</span>
-                                                    <span className="text-lg font-bold text-yellow-100 uppercase tracking-wide">Empanadas</span>
-                                                </div>
-                                            )}
+                                                                {p.obs && (
+                                                                    <div className="mt-1 ml-9 bg-amber-400 text-amber-950 px-2 py-1 rounded-md text-xs font-black border border-yellow-300 shadow-sm flex items-center gap-1.5">
+                                                                        <AlertCircle size={14} className="text-amber-900 shrink-0" /> <span className="uppercase">Obs: {p.obs}</span>
+                                                                    </div>
+                                                                )}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {Array.isArray(o.drinks) && o.drinks.length > 0 && (
+                                                    <ul className="space-y-1.5 mt-2 border-t border-white/10 pt-2">
+                                                        {o.drinks.map((d, i) => (
+                                                            <li key={`d${i}`} className="text-base font-bold text-blue-300">
+                                                                <span className="text-blue-400 mr-2">{d.qty}x</span> {d.name}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {o.empanadas > 0 && (
+                                                    <div className="bg-yellow-900/40 p-2.5 rounded-xl border border-yellow-600/40 mt-2 flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-3xl font-black text-yellow-400 w-8 text-right">{o.empanadas}</span>
+                                                            <span className="text-base font-bold text-yellow-100 uppercase tracking-wide">Empanadas</span>
+                                                        </div>
+                                                        <span className="text-xs text-yellow-300 font-bold bg-yellow-900/60 px-2 py-1 rounded">Cocinar</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -1636,7 +1674,7 @@
             const [prices, setPrices] = useState(INITIAL_PRICES);
             const [history, setHistory] = useState([]);
             const [dialog, setDialog] = useState(null);
-            const [showReport, setShowReport] = useState(false);
+            const [showCashDetail, setShowCashDetail] = useState(false);
 
             useEffect(() => {
                 let unsubscribe = () => { };
@@ -1699,7 +1737,7 @@
                                 setHistory={saveHistory}
                                 showConfirm={showConfirm}
                                 showAlert={showAlert}
-                                onOpenReport={() => setShowReport(true)}
+                                onOpenCashDetail={() => setShowCashDetail(true)}
                             />
                         );
                     case 'kitchen':
@@ -1714,7 +1752,8 @@
                                 showAlert={showAlert}
                                 prices={prices}
                                 activeLibres={activeLibres}
-                                onOpenReport={() => setShowReport(true)}
+                                setActiveLibres={saveLibres}
+                                onOpenCashDetail={() => setShowCashDetail(true)}
                             />
                         );
                     default:
@@ -1722,7 +1761,7 @@
                             <Landing
                                 setView={setView}
                                 showConfirm={showConfirm}
-                                onOpenReport={() => setShowReport(true)}
+                                onOpenCashDetail={() => setShowCashDetail(true)}
                                 history={history}
                                 activeLibres={activeLibres}
                                 orders={orders}
@@ -1733,18 +1772,17 @@
             };
 
             return (
-                <div className="min-h-screen font-sans text-gray-900 bg-gray-900 relative">
-                    <div className={showReport ? 'no-print' : ''}>
+                <div className={`min-h-screen font-sans ${view === 'kitchen' ? 'bg-black text-white' : (view === 'landing' ? 'bg-sky-50 text-slate-800' : 'bg-gray-100 text-gray-900')} relative`}>
+                    <div>
                         {renderView()}
                     </div>
 
-                    {/* MODAL DE REPORTE Y GUARDADO EN PDF */}
-                    <ReportModal
-                        isOpen={showReport}
-                        onClose={() => setShowReport(false)}
-                        history={history}
-                        activeLibres={activeLibres}
+                    {/* MODAL DETALLE DE CAJA Y CONTROL DE VENTAS */}
+                    <CashDetailModal
+                        isOpen={showCashDetail}
+                        onClose={() => setShowCashDetail(false)}
                         orders={orders}
+                        history={history}
                         prices={prices}
                     />
 

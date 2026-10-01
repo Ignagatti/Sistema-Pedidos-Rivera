@@ -48,7 +48,8 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Club Bochas Manager"
+      "shortcutName": "Club Bochas Manager",
+      "deleteAppDataOnUninstall": false
     }
   }
 }
