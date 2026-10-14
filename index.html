@@ -171,6 +171,15 @@
             drinks: {}
         };
 
+        // Ícono de flecha derecha para enviar a cocina
+        const ArrowRight = (p) => <Icon {...p} d={<><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>} />;
+        const Send = (p) => <Icon {...p} d={<><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>} />;
+        const Phone = (p) => <Icon {...p} d={<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></>} />;
+        const Hash = (p) => <Icon {...p} d={<><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></>} />;
+        const Clock = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>} />;
+        const RotateCcw = (p) => <Icon {...p} d={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />;
+        const ClipboardList = (p) => <Icon {...p} d={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></>} />;
+
         const storage = window.__BOCHAS_STORAGE__ || {
             loadInitial: async () => ({ orders: [], libres: [], prices: INITIAL_PRICES, history: [] }),
             set: async () => { },
@@ -189,108 +198,6 @@
 
         const generateId = () => `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-        const ActiveLibresList = ({ libres, onRound, onListo, onClose }) => {
-            if (!libres || libres.length === 0) return (
-                <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4">Sin mesas activas</div>
-            );
-            return (
-                <div className="flex-1 overflow-y-auto space-y-2 p-2">
-                    {libres.map(l => (
-                        <div key={l.id} className="bg-white rounded shadow-sm border-l-4 border-purple-500 p-2 flex flex-col gap-1.5">
-                            <div className="flex justify-between items-center">
-                                <span className="font-black text-gray-800 text-sm truncate">{l.client}</span>
-                                <span className="text-[10px] text-gray-500 font-mono">{l.timestamp}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">{l.people} pers.</span>
-                                {l.status === 'cocinando' ? (
-                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                                        En Cocina ({getLibreRoundTitle(l.round)})
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
-                                        Comiendo ({getLibreRoundTitle(l.round)})
-                                    </span>
-                                )}
-                            </div>
-                            {l.obs && (
-                                <div className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded flex items-center gap-1.5">
-                                    <AlertCircle size={13} className="text-amber-600 shrink-0" />
-                                    <span className="truncate">{l.obs}</span>
-                                </div>
-                            )}
-                            <div className="flex gap-1 mt-1">
-                                {l.status === 'cocinando' && onListo && (
-                                    <button onClick={() => onListo(l)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm" title="Listo (Ya salió de cocina)">
-                                        <Check size={12} /> Salió
-                                    </button>
-                                )}
-                                <button onClick={() => onRound(l)} className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-700 py-1 rounded text-xs font-bold transition flex items-center justify-center gap-1">
-                                    <RotateCw size={12} /> +Ronda ({(l.round || 1) + 1}ª)
-                                </button>
-                                <button onClick={() => onClose(l)} className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold transition relative group" title="Dar de baja mesa (Ya comió)">
-                                    <LogOut size={14} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        };
-
-        const KitchenOrdersList = ({ orders, onComplete, onDelete, prices }) => {
-            const cartaOrders = (orders || []).filter(o => o.type !== 'libre');
-            if (!cartaOrders || cartaOrders.length === 0) return (
-                <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4 bg-slate-100">Sin pedidos</div>
-            );
-            return (
-                <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-100">
-                    {cartaOrders.map(o => (
-                        <div key={o.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                            <div className="bg-slate-200 px-2 py-1.5 flex justify-between items-center border-b border-gray-200">
-                                <div className="flex items-center gap-1.5 truncate max-w-[170px]">
-                                    <span className="font-black text-slate-800 text-xs truncate">{o.client}</span>
-                                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${o.destination === 'salon' || (!o.destination && isTableNumber(o.client)) ? 'bg-purple-100 text-purple-800' : 'bg-sky-100 text-sky-800'}`}>
-                                        {o.destination === 'salon' || (!o.destination && isTableNumber(o.client)) ? 'Comer' : 'Llevar'}
-                                    </span>
-                                </div>
-                                <div className="text-[10px] font-mono text-slate-500">{o.timestamp}</div>
-                            </div>
-                            <div className="p-2 space-y-1.5 text-xs text-gray-700 flex-1">
-                                {o.obs && (
-                                    <div className="bg-yellow-50 text-yellow-800 p-1 rounded font-bold border border-yellow-200 flex gap-1 items-start">
-                                        <AlertCircle size={12} className="shrink-0 mt-0.5" /> <span>{o.obs}</span>
-                                    </div>
-                                )}
-                                {Array.isArray(o.pizzas) && o.pizzas.map((p, i) => (
-                                    <div key={i} className="flex justify-between font-medium">
-                                        <span><span className="font-bold">{p.qty}x</span> {p.description} {p.withBox && '(Caja)'}</span>
-                                        {p.obs && <span className="text-orange-600 italic ml-1">({p.obs})</span>}
-                                    </div>
-                                ))}
-                                {Array.isArray(o.drinks) && o.drinks.map((d, i) => (
-                                    <div key={`d${i}`} className="flex justify-between font-medium text-blue-800">
-                                        <span><span className="font-bold">{d.qty}x</span> {d.name}</span>
-                                    </div>
-                                ))}
-                                {o.empanadas > 0 && (
-                                    <div className="font-bold text-yellow-700">{o.empanadas}x Empanadas</div>
-                                )}
-                            </div>
-                            <div className="bg-gray-50 p-1.5 flex gap-1 border-t border-gray-200 mt-auto">
-                                <button onClick={() => onComplete(o)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-2 rounded flex items-center justify-center gap-1 shadow-sm transition flex-1 text-[11px]">
-                                    <Check size={12} /> LISTO
-                                </button>
-                                <button onClick={() => onDelete(o)} className="bg-red-100 hover:bg-red-200 text-red-600 px-2 rounded flex items-center justify-center transition" title="Eliminar sin sumar">
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        };
-
         // --- UTILIDAD DE IDENTIFICACIÓN: NÚMEROS (MESAS COMER AHÍ) VS NOMBRES (PARA LLEVAR) ---
         const isTableNumber = (client) => {
             if (!client) return false;
@@ -301,6 +208,302 @@
             if (/^(mesa|m)\s*\d+$/i.test(str)) return true;
             return false;
         };
+
+        // --- FORMATEO AUTOMÁTICO DE NÚMERO A "Mesa X" ---
+        const formatClientName = (client) => {
+            if (!client) return '';
+            const trimmed = String(client).trim();
+            // Si es un número puro: "4" -> "Mesa 4"
+            if (/^\d+$/.test(trimmed)) {
+                return `Mesa ${trimmed}`;
+            }
+            // Si es "m4", "m 4", "mesa4", etc. normalizar a "Mesa 4"
+            const match = trimmed.match(/^(?:mesa|m)\s*(\d+)$/i);
+            if (match) {
+                return `Mesa ${match[1]}`;
+            }
+            return trimmed;
+        };
+
+        const ActiveLibresList = ({ libres, onSendToKitchen, onRound, onListo, onClose }) => {
+            if (!libres || libres.length === 0) return (
+                <div className="flex-1 flex items-center justify-center text-gray-400 italic text-xs p-4">Sin mesas activas</div>
+            );
+            return (
+                <div className="flex-1 overflow-y-auto space-y-2 p-2">
+                    {libres.map(l => (
+                        <div key={l.id} className="bg-white rounded-lg shadow-sm border-l-4 border-purple-500 p-2.5 flex flex-col gap-1.5 border border-slate-200">
+                            <div className="flex justify-between items-center">
+                                <span className="font-black text-gray-900 text-sm truncate">{formatClientName(l.client)}</span>
+                                <span className="text-[10px] text-gray-500 font-mono">{l.timestamp}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">{l.people} pers.</span>
+                                {l.status === 'cocinando' ? (
+                                    <span className="text-[10px] font-black text-red-700 bg-red-100 px-2 py-0.5 rounded border border-red-300 flex items-center gap-1 animate-pulse">
+                                        <ChefHat size={11} /> En Cocina ({getLibreRoundTitle(l.round)})
+                                    </span>
+                                ) : l.status === 'servida' ? (
+                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1">
+                                        <Check size={11} /> Comiendo ({getLibreRoundTitle(l.round)})
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                                        <Clock size={11} /> Pendiente ({getLibreRoundTitle(l.round)})
+                                    </span>
+                                )}
+                            </div>
+                            {l.obs && (
+                                <div className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded flex items-center gap-1.5">
+                                    <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                                    <span className="truncate">{l.obs}</span>
+                                </div>
+                            )}
+                            <div className="flex gap-1.5 mt-1 pt-1 border-t border-slate-100">
+                                {l.status === 'cocinando' ? (
+                                    <button
+                                        onClick={() => onListo && onListo(l)}
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white py-1.5 px-2 rounded-md text-xs font-black transition flex items-center justify-center gap-1 shadow-sm"
+                                        title="Marcar que ya salió la comida de cocina a la mesa"
+                                    >
+                                        <Check size={13} /> Salió a Mesa
+                                    </button>
+                                ) : l.status === 'servida' ? (
+                                    <button
+                                        onClick={() => onRound(l)}
+                                        className="flex-1 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white py-1.5 px-2 rounded-md text-xs font-black transition flex items-center justify-center gap-1 shadow-sm"
+                                        title="Solicitar siguiente ronda"
+                                    >
+                                        <RotateCw size={13} /> + Ronda ({(l.round || 1) + 1}ª)
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => onSendToKitchen && onSendToKitchen(l)}
+                                        className="flex-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white py-1.5 px-2 rounded-md text-xs font-black transition flex items-center justify-center gap-1 shadow-sm"
+                                        title="Enviar esta ronda a la pantalla de cocina"
+                                    >
+                                        <Send size={13} /> ENVIAR A COCINA ({getLibreRoundTitle(l.round)})
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => onClose(l)}
+                                    className="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center justify-center"
+                                    title="Dar de baja mesa (Ya terminó de comer / Cobrar)"
+                                >
+                                    <LogOut size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- LISTA UNIFICADA DE PEDIDOS (PENDIENTES + EN COCINA) ---
+        const UnifiedOrdersList = ({
+            orders = [],
+            onSendToKitchen,
+            onSendAllToKitchen,
+            onComplete,
+            onDelete,
+            onReturnToPending,
+            prices = {}
+        }) => {
+            const cartaOrders = (orders || []).filter(o => o.type !== 'libre');
+            const pendingOrders = cartaOrders.filter(o => !o.inKitchen);
+            const kitchenOrders = cartaOrders.filter(o => o.inKitchen);
+
+            if (cartaOrders.length === 0) {
+                return (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 italic text-xs p-6 bg-slate-50">
+                        <ClipboardList size={36} className="text-gray-300 mb-2" />
+                        <span>Sin pedidos cargados</span>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex-1 flex flex-col overflow-hidden bg-slate-100">
+                    {/* BARRA SUPERIOR DE RESUMEN Y ACCIONES */}
+                    <div className="px-3 py-2 bg-slate-800 text-white flex justify-between items-center shrink-0 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <ClipboardList size={16} className="text-amber-400" />
+                            <span className="text-xs font-bold uppercase tracking-wide">Pedidos ({cartaOrders.length})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-amber-300 bg-amber-950/70 border border-amber-600/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                                {kitchenOrders.length} en cocina
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-300 bg-slate-700 px-2 py-0.5 rounded-full">
+                                {pendingOrders.length} pendientes
+                            </span>
+                            {pendingOrders.length > 0 && (
+                                <button
+                                    onClick={onSendAllToKitchen}
+                                    className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-[10px] font-black px-2.5 py-1 rounded flex items-center gap-1 shadow transition"
+                                    title="Enviar todos los pedidos pendientes a la vista de cocina"
+                                >
+                                    <Send size={11} /> ENVIAR TODOS
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* LISTA DE PEDIDOS */}
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
+                        {cartaOrders.map((o, idx) => {
+                            const isInKitchen = !!o.inKitchen;
+                            const isTakeaway = o.destination ? (o.destination === 'llevar') : !isTableNumber(o.client);
+
+                            // Estilo según estado:
+                            // Los que están en cocina se pintan de color llamativo (ámbar/naranja de cocina)
+                            // Los pendientes se muestran con fondo blanco neutro
+                            let cardClasses = 'rounded-xl shadow-sm border-2 overflow-hidden flex flex-col transition-all';
+                            let headerClasses = 'px-3 py-2 flex justify-between items-center border-b font-sans';
+
+                            if (isInKitchen) {
+                                cardClasses += ' bg-amber-50/90 border-amber-500 shadow-md ring-2 ring-amber-400/40';
+                                headerClasses += ' bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-700';
+                            } else {
+                                cardClasses += ' bg-white border-slate-300 hover:border-slate-400';
+                                headerClasses += ' bg-slate-200 text-slate-800 border-slate-300';
+                            }
+
+                            return (
+                                <div key={o.id} className={cardClasses}>
+                                    {/* ENCABEZADO DE LA TARJETA */}
+                                    <div className={headerClasses}>
+                                        <div className="flex items-center gap-1.5 truncate max-w-[220px]">
+                                            {/* Número en cocina si ya fue enviado, o número correlativo */}
+                                            {isInKitchen ? (
+                                                <span className="text-[10px] font-black text-amber-950 bg-amber-200 border border-amber-400 px-1.5 py-0.5 rounded shadow-sm shrink-0">
+                                                    #{o.orderNumber || idx + 1}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-mono text-slate-600 bg-slate-300 px-1.5 py-0.5 rounded shrink-0">
+                                                    #{idx + 1}
+                                                </span>
+                                            )}
+
+                                            <span className="font-black text-xs truncate">{formatClientName(o.client)}</span>
+
+                                            {/* Badge Llevar o Comer */}
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${isTakeaway ? 'bg-sky-100 text-sky-800' : 'bg-purple-100 text-purple-800'}`}>
+                                                {isTakeaway ? 'Llevar' : 'Comer'}
+                                            </span>
+
+                                            {/* Badge Estado En Cocina vs Pendiente */}
+                                            {isInKitchen ? (
+                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 bg-red-600 text-white flex items-center gap-0.5 shadow-sm">
+                                                    <ChefHat size={10} /> EN COCINA
+                                                </span>
+                                            ) : (
+                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-0.5">
+                                                    <Clock size={10} /> Pendiente
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${isInKitchen ? 'bg-white/95 text-slate-900 border-white/60 font-black' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>
+                                                ${(o.totalPrice || 0).toLocaleString()}
+                                            </span>
+                                            <span className={`text-[10px] font-mono ${isInKitchen ? 'text-white/80' : 'text-slate-500'}`}>
+                                                {o.timestamp}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* CONTENIDO DEL PEDIDO */}
+                                    <div className="p-2.5 space-y-1 text-xs text-slate-700 flex-1 bg-white/70">
+                                        {o.obs && (
+                                            <div className="bg-yellow-50 text-yellow-800 p-1.5 rounded font-bold border border-yellow-200 flex gap-1 items-start text-xs mb-1">
+                                                <AlertCircle size={13} className="shrink-0 mt-0.5 text-yellow-600" />
+                                                <span>{o.obs}</span>
+                                            </div>
+                                        )}
+                                        {Array.isArray(o.pizzas) && o.pizzas.map((p, i) => (
+                                            <div key={i} className="flex justify-between font-medium items-center">
+                                                <span>
+                                                    <span className="font-bold text-slate-900">{p.qty}x</span> {p.description}{' '}
+                                                    {p.withBox ? (
+                                                        <span className="text-[10px] font-bold text-sky-700 bg-sky-100 px-1 py-0.2 rounded">(Caja)</span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-gray-500">(Sin caja)</span>
+                                                    )}
+                                                </span>
+                                                {p.obs && <span className="text-orange-600 italic text-[11px] ml-1">({p.obs})</span>}
+                                            </div>
+                                        ))}
+                                        {Array.isArray(o.drinks) && o.drinks.map((d, i) => (
+                                            <div key={`d${i}`} className="flex justify-between font-medium text-blue-800 items-center">
+                                                <span><span className="font-bold">{d.qty}x</span> {d.name}</span>
+                                            </div>
+                                        ))}
+                                        {o.empanadas > 0 && (
+                                            <div className="font-bold text-yellow-800 flex justify-between items-center">
+                                                <span>{o.empanadas}x Empanadas</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* ACCIONES DEL PEDIDO */}
+                                    <div className="p-1.5 flex gap-1.5 border-t border-slate-200 bg-slate-50 mt-auto items-center">
+                                        {!isInKitchen ? (
+                                            // SI ESTÁ PENDIENTE: Botón para Enviar a Cocina
+                                            <>
+                                                <button
+                                                    onClick={() => onSendToKitchen(o)}
+                                                    className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition flex-1 text-xs"
+                                                >
+                                                    <Send size={13} /> ENVIAR A COCINA
+                                                </button>
+                                                <button
+                                                    onClick={() => onDelete(o)}
+                                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 py-2 rounded-lg flex items-center justify-center transition active:scale-95"
+                                                    title="Eliminar pedido pendiente"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            // SI YA ESTÁ EN COCINA: Botón de Listo (completar comanda) y opción de regresar/eliminar
+                                            <>
+                                                <button
+                                                    onClick={() => onComplete(o)}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition flex-1 text-xs"
+                                                >
+                                                    <Check size={14} /> MARCAR LISTO
+                                                </button>
+                                                {onReturnToPending && (
+                                                    <button
+                                                        onClick={() => onReturnToPending(o)}
+                                                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-2 rounded-lg flex items-center justify-center transition active:scale-95"
+                                                        title="Volver a pendiente (quitar de la vista de cocina)"
+                                                    >
+                                                        <RotateCcw size={12} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => onDelete(o)}
+                                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 py-2 rounded-lg flex items-center justify-center transition active:scale-95"
+                                                    title="Eliminar comanda sin sumar"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+
 
         // --- FORMATEO DE RONDAS DE MESA LIBRE (1ra Libre, 2da Libre, 3ra Libre, etc.) ---
         const getLibreRoundTitle = (round = 1) => {
@@ -697,7 +900,7 @@
         };
 
         // --- PANTALLA DE RECEPCIÓN ---
-        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert, onOpenCashDetail }) => {
+        const ReceptionView = ({ setView, orders, setOrders, activeLibres, setActiveLibres, prices, setPrices, history, setHistory, showConfirm, showAlert, onOpenCashDetail, orderCounter, setOrderCounter }) => {
             const [showPriceConfig, setShowPriceConfig] = useState(false);
             const [localPrices, setLocalPrices] = useState(prices);
             const totals = useMemo(() => calculateTakeawayTotals(orders, history, prices), [orders, history, prices]);
@@ -873,8 +1076,9 @@
             };
 
             const submitOrder = () => {
-                const client = clientInput.trim();
-                if (!client) return showAlert("Falta ingresar el nombre del cliente o mesa");
+                const rawClient = clientInput.trim();
+                if (!rawClient) return showAlert("Falta ingresar el nombre del cliente o mesa");
+                const client = formatClientName(rawClient);
 
                 const newId = generateId();
                 const currentDateStr = getLocalDateString(new Date());
@@ -895,29 +1099,13 @@
                         pricePerPerson,
                         totalPrice: tableTotal,
                         round: 1,
-                        status: 'cocinando',
+                        status: 'esperando',
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                         date: currentDateStr,
                         obs
                     };
 
                     setActiveLibres([...activeLibres, newLibre]);
-
-                    setOrders([...orders, {
-                        id: `${newId}_r1`,
-                        libreId: newId,
-                        client,
-                        type: 'libre',
-                        people,
-                        round: 1,
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        date: currentDateStr,
-                        obs,
-                        pizzas: [],
-                        drinks: [],
-                        empanadas: 0,
-                        totalPrice: 0
-                    }]);
 
                     if (peopleQtyRef.current) peopleQtyRef.current.value = "";
                     if (libreObsRef.current) libreObsRef.current.value = "";
@@ -934,7 +1122,8 @@
 
                     const destination = detectedDestination;
 
-                    setOrders([...orders, {
+                    // Los pedidos van a la lista única de pedidos con inKitchen: false (esperando para enviar a cocina)
+                    const newOrder = {
                         id: newId,
                         client,
                         destination,
@@ -944,8 +1133,13 @@
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                         date: currentDateStr,
                         type: 'normal',
-                        totalPrice: total
-                    }]);
+                        totalPrice: total,
+                        inKitchen: false,
+                        orderNumber: null,
+                        obs: (obsRef.current?.value || '').trim()
+                    };
+
+                    setOrders([...orders, newOrder]);
 
                     setCurrentPizzas([]);
                     setCurrentDrinks([]);
@@ -962,14 +1156,54 @@
                 }
             };
 
-            const handleRound = useCallback((l) => {
-                const nr = (l.round || 1) + 1;
-                const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr, status: 'cocinando' } : x);
+            // --- ENVIAR PEDIDO INDIVIDUAL A COCINA ---
+            const handleSendToKitchen = useCallback((o) => {
+                const nextNum = orderCounter + 1;
+                setOrderCounter(nextNum);
+                const updated = orders.map(x => x.id === o.id ? {
+                    ...x,
+                    inKitchen: true,
+                    orderNumber: x.orderNumber || nextNum,
+                    sentToKitchenAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                } : x);
+                setOrders(updated);
+            }, [orders, orderCounter, setOrders, setOrderCounter]);
+
+            // --- ENVIAR TODOS LOS PENDIENTES A COCINA ---
+            const handleSendAllToKitchen = useCallback(() => {
+                const pending = orders.filter(o => o.type !== 'libre' && !o.inKitchen);
+                if (pending.length === 0) return;
+                let counter = orderCounter;
+                const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const updated = orders.map(x => {
+                    if (x.type !== 'libre' && !x.inKitchen) {
+                        counter++;
+                        return {
+                            ...x,
+                            inKitchen: true,
+                            orderNumber: x.orderNumber || counter,
+                            sentToKitchenAt: nowTime
+                        };
+                    }
+                    return x;
+                });
+                setOrderCounter(counter);
+                setOrders(updated);
+            }, [orders, orderCounter, setOrders, setOrderCounter]);
+
+            // --- VOLVER PEDIDO A PENDIENTE (SACAR DE COCINA) ---
+            const handleReturnToPending = useCallback((o) => {
+                const updated = orders.map(x => x.id === o.id ? { ...x, inKitchen: false } : x);
+                setOrders(updated);
+            }, [orders, setOrders]);
+
+            // --- ENVIAR RONDA DE MESA LIBRE A COCINA ---
+            const handleSendLibreToKitchen = useCallback((l) => {
+                const updated = activeLibres.map(x => x.id === l.id ? { ...x, status: 'cocinando' } : x);
                 setActiveLibres(updated);
-                // Retiramos comanda vieja si existiera y enviamos la nueva comanda de la siguiente ronda
                 const cleanOrders = orders.filter(x => x.libreId !== l.id && x.id !== l.id);
                 setOrders([...cleanOrders, {
-                    id: generateId(),
+                    id: `${l.id}_r${l.round || 1}_${Date.now()}`,
                     libreId: l.id,
                     client: l.client,
                     pizzas: [],
@@ -979,10 +1213,19 @@
                     date: getLocalDateString(new Date()),
                     type: 'libre',
                     people: l.people,
-                    round: nr,
+                    round: l.round || 1,
+                    inKitchen: true,
                     totalPrice: 0,
                     obs: l.obs || ''
                 }]);
+            }, [activeLibres, orders, setActiveLibres, setOrders]);
+
+            const handleRound = useCallback((l) => {
+                const nr = (l.round || 1) + 1;
+                // La siguiente ronda queda pendiente (esperando) para que el usuario decida cuándo enviarla a cocina
+                const updated = activeLibres.map(x => x.id === l.id ? { ...x, round: nr, status: 'esperando' } : x);
+                setActiveLibres(updated);
+                setOrders(orders.filter(x => x.libreId !== l.id && x.id !== l.id));
             }, [activeLibres, orders, setActiveLibres, setOrders]);
 
             const handleListoLibre = useCallback((l) => {
@@ -1183,12 +1426,12 @@
 
                             {isLibre && (
                                 <div className="mt-2 space-y-3">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2.5 items-start">
                                         <div className="relative shrink-0">
-                                            <input ref={peopleQtyRef} type="number" placeholder="Cant. Pers." value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-28 sm:w-32 p-2 border-2 border-purple-400 rounded text-center font-bold text-base" />
-                                            <span className="text-[10px] font-bold text-purple-700 block text-center mt-0.5">(${prices.pizzaLibreH || 0} c/u)</span>
+                                            <input ref={peopleQtyRef} type="number" placeholder="Cant. Pers." value={peopleQtyInput} onChange={e => setPeopleQtyInput(e.target.value)} className="w-32 sm:w-36 p-2.5 border-2 border-purple-400 rounded-lg text-center font-black text-lg shadow-sm focus:ring-2 focus:ring-purple-400 focus:outline-none" />
+                                            <span className="text-[11px] font-bold text-purple-700 block text-center mt-1">(${prices.pizzaLibreH || 0} c/u)</span>
                                         </div>
-                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa Libre (mozo, ubicación, etc)..." className="flex-1 p-2 border-2 border-purple-400 rounded h-[46px] text-sm" />
+                                        <input ref={libreObsRef} type="text" placeholder="Observación Mesa Libre (mozo, ubicación, etc)..." className="flex-1 p-2.5 border-2 border-purple-400 rounded-lg h-[50px] text-sm shadow-sm font-medium focus:ring-2 focus:ring-purple-400 focus:outline-none" />
                                     </div>
                                     
                                     <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-5 flex flex-col items-center justify-center text-center space-y-2 text-purple-900 mt-2 shadow-sm">
@@ -1372,26 +1615,39 @@
                                 </span>
                             </div>
                             <button onClick={submitOrder} className={`w-full py-3 rounded-lg font-bold text-xl text-white shadow transition ${isLibre ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                                {isLibre ? 'INICIAR MESA LIBRE' : 'ENVIAR PEDIDO'}
+                                {isLibre ? 'INICIAR MESA LIBRE' : 'GUARDAR PEDIDO'}
                             </button>
                         </div>
                     </div>
 
-                    {/* COLUMNA DERECHA */}
+                    {/* COLUMNA DERECHA - LISTA UNIFICADA DE PEDIDOS (PENDIENTES + EN COCINA) + MESAS LIBRES */}
                     <div className="w-1/2 bg-slate-100 flex flex-col h-full overflow-hidden border-l border-gray-300">
-                        <div className="p-3 bg-slate-800 text-white shadow-md flex justify-between items-center shrink-0">
-                            <h2 className="font-bold flex items-center gap-2 text-sm"><Monitor size={18} /> Pedidos en Cocina</h2>
-                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-full font-bold">{orders.length}</span>
+                        {/* LISTA UNIFICADA DE PEDIDOS (PENDIENTES + EN COCINA EN UN MISMO PANEL) */}
+                        <div className="flex-1 flex flex-col min-h-0">
+                            <UnifiedOrdersList
+                                orders={orders}
+                                onSendToKitchen={handleSendToKitchen}
+                                onSendAllToKitchen={handleSendAllToKitchen}
+                                onComplete={handleCompleteOrder}
+                                onDelete={handleDeleteOrder}
+                                onReturnToPending={handleReturnToPending}
+                                prices={prices}
+                            />
                         </div>
-                        
-                        <KitchenOrdersList orders={orders} onComplete={handleCompleteOrder} onDelete={handleDeleteOrder} prices={prices} />
 
+                        {/* MESAS LIBRES */}
                         <div className="bg-slate-200 border-t-4 border-slate-300 shrink-0 h-[32vh] flex flex-col shadow-inner">
                             <div className="bg-slate-300 px-3 py-2 text-xs font-bold text-slate-800 uppercase flex justify-between items-center border-b border-slate-400/50">
                                 <span className="flex items-center gap-1.5"><Users size={16} className="text-purple-600" /> Mesas Libres Activas</span>
                                 <span className="bg-purple-600 text-white px-2.5 py-0.5 rounded-full font-black text-xs">{activeLibres.length}</span>
                             </div>
-                            <ActiveLibresList libres={activeLibres} onRound={handleRound} onListo={handleListoLibre} onClose={handleCloseLibre} />
+                            <ActiveLibresList
+                                libres={activeLibres}
+                                onSendToKitchen={handleSendLibreToKitchen}
+                                onRound={handleRound}
+                                onListo={handleListoLibre}
+                                onClose={handleCloseLibre}
+                            />
                         </div>
                     </div>
                 </div>
@@ -1403,6 +1659,7 @@
             const [zoom, setZoom] = useState(1);
 
             const totals = useMemo(() => calculateTakeawayTotals(orders, history, prices), [orders, history, prices]);
+            const kitchenOrders = useMemo(() => (orders || []).filter(o => o.inKitchen), [orders]);
 
             const handleCompleteNormal = (o) => {
                 showConfirm(`¿Marcar pedido de "${o.client}" como listo?`, () => {
@@ -1454,6 +1711,7 @@
                     type: 'libre',
                     people: table.people,
                     round: nextRound,
+                    inKitchen: true,
                     totalPrice: 0,
                     obs: table.obs || ''
                 };
@@ -1514,7 +1772,7 @@
                             <h2 className="text-sm font-black text-gray-300 uppercase tracking-wider flex items-center gap-2">
                                 <Monitor size={18} className="text-yellow-400" /> Comandas en Preparación
                                 <span className="bg-red-600 text-white text-xs px-2.5 py-0.5 rounded-full font-black">
-                                    {orders.length}
+                                    {kitchenOrders.length}
                                 </span>
                             </h2>
                             <span className="text-xs text-gray-400">
@@ -1522,21 +1780,21 @@
                             </span>
                         </div>
 
-                        {orders.length === 0 ? (
+                        {kitchenOrders.length === 0 ? (
                             <div className="flex-1 flex flex-col items-center justify-center opacity-30 py-16">
                                 <ChefHat size={100} />
                                 <h2 className="text-3xl font-bold mt-3">Sin comandas pendientes en cocina</h2>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3.5 sm:gap-4 items-start content-start" style={{ zoom: zoom }}>
-                                {orders.map((o) => {
+                                {kitchenOrders.map((o) => {
                                     if (o.type === 'libre') {
                                         return (
                                             <div key={o.id} className="relative rounded-2xl overflow-hidden shadow-2xl bg-indigo-950/90 border-2 border-indigo-500 flex flex-col justify-between">
                                                 {/* HEADER COMANDA LIBRE */}
                                                 <div className="p-3 bg-indigo-800 text-white flex justify-between items-start border-b border-indigo-700">
                                                     <div className="overflow-hidden">
-                                                        <h3 className="text-2xl sm:text-3xl font-black text-yellow-300 truncate leading-none mb-1">{o.client}</h3>
+                                                        <h3 className="text-2xl sm:text-3xl font-black text-yellow-300 truncate leading-none mb-1">{formatClientName(o.client)}</h3>
                                                         <div className="flex items-center gap-2 text-indigo-200 font-mono text-xs">
                                                             <span>{o.timestamp}</span>
                                                             <span className="bg-indigo-950 px-2 py-0.5 rounded font-black text-yellow-300 border border-yellow-500/40">
@@ -1576,15 +1834,25 @@
 
                                     // PEDIDOS A LA CARTA
                                     const isTakeaway = o.destination ? (o.destination === 'llevar') : !isTableNumber(o.client);
+                                    const cardBg = 'bg-gray-800 border border-gray-700';
+                                    const headerBg = isTakeaway ? 'bg-sky-950/90 border-sky-800' : 'bg-gray-700 border-gray-600';
 
                                     return (
-                                        <div key={o.id} className="relative rounded-2xl overflow-hidden shadow-2xl bg-gray-800 border border-gray-700 flex flex-col justify-between">
-                                            <div className={`p-3 flex justify-between items-start border-b ${isTakeaway ? 'bg-sky-950/90 border-sky-800' : 'bg-gray-700 border-gray-600'}`}>
+                                        <div key={o.id} className={`relative rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between ${cardBg}`}>
+                                            {/* NÚMERO DE ORDEN GRANDE */}
+                                            {o.orderNumber && (
+                                                <div className="absolute top-2 right-2 z-10">
+                                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl shadow-lg border-2 bg-red-600 text-white border-red-400">
+                                                        #{o.orderNumber}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className={`p-3 flex justify-between items-start border-b ${headerBg}`}>
                                                 <div className="overflow-hidden">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 truncate leading-none">{o.client}</h3>
+                                                        <h3 className="text-2xl sm:text-3xl font-black truncate leading-none text-yellow-400">{formatClientName(o.client)}</h3>
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-gray-300 font-mono text-xs">
+                                                    <div className="flex items-center gap-2 text-gray-300 font-mono text-xs flex-wrap">
                                                         <span>{o.timestamp}</span>
                                                         {isTakeaway ? (
                                                             <span className="bg-sky-600 text-white font-black text-[11px] px-2 py-0.5 rounded shadow">
@@ -1675,12 +1943,15 @@
             const [history, setHistory] = useState([]);
             const [dialog, setDialog] = useState(null);
             const [showCashDetail, setShowCashDetail] = useState(false);
+            const [orderCounter, setOrderCounter] = useState(0);
 
             useEffect(() => {
                 let unsubscribe = () => { };
                 const init = async () => {
                     const data = await storage.loadInitial();
-                    setOrders(data.orders || []);
+                    const rawOrders = data.orders || [];
+                    const normalizedOrders = rawOrders.map(o => (o.inKitchen === undefined ? { ...o, inKitchen: true } : o));
+                    setOrders(normalizedOrders);
                     setActiveLibres(data.libres || []);
                     const stored = data.prices || {};
                     const mergedPrices = {
@@ -1691,8 +1962,14 @@
                     };
                     setPrices(mergedPrices);
                     setHistory(data.history || []);
+                    // Calcular el counter inicial basado en los pedidos existentes
+                    const maxNum = normalizedOrders.reduce((max, o) => Math.max(max, o.orderNumber || 0), 0);
+                    setOrderCounter(maxNum);
                     unsubscribe = storage.onUpdate(({ key, value }) => {
-                        if (key === 'orders') setOrders(value);
+                        if (key === 'orders') {
+                            const updated = (value || []).map(o => (o.inKitchen === undefined ? { ...o, inKitchen: true } : o));
+                            setOrders(updated);
+                        }
                         if (key === 'libres') setActiveLibres(value);
                         if (key === 'prices') {
                             const merged = {
@@ -1713,6 +1990,7 @@
             const saveLibres = useCallback((d) => { setActiveLibres(d); storage.set('libres', d); }, []);
             const savePrices = useCallback((d) => { setPrices(d); storage.set('prices', d); }, []);
             const saveHistory = useCallback((d) => { setHistory(d); storage.set('history', d); }, []);
+            const saveOrderCounter = useCallback((d) => { setOrderCounter(d); }, []);
 
             const showConfirm = useCallback((message, onConfirm) => {
                 setDialog({ type: 'confirm', message, onConfirm });
@@ -1738,6 +2016,8 @@
                                 showConfirm={showConfirm}
                                 showAlert={showAlert}
                                 onOpenCashDetail={() => setShowCashDetail(true)}
+                                orderCounter={orderCounter}
+                                setOrderCounter={saveOrderCounter}
                             />
                         );
                     case 'kitchen':
